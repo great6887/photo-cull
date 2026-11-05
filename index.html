@@ -106,8 +106,9 @@
     display: flex; flex-direction: column; align-items: center;
   }
   .adv-link {
-    display: inline-block; text-align: center; margin: 0; padding: 8px 12px;
-    min-height: 36px; background: none; border: none; color: var(--muted);
+    display: inline-flex; align-items: center; justify-content: center;
+    text-align: center; margin: 0; padding: 12px 16px;
+    min-height: 44px; background: none; border: none; color: var(--muted);
     font-size: 14px; text-decoration: underline; text-underline-offset: 3px;
     cursor: pointer; font-family: inherit;
   }
@@ -213,7 +214,7 @@
   }
   .choice-badge {
     position: absolute; top: 10px; right: 10px; z-index: 2;
-    font-size: 12px; font-weight: 800; line-height: 1;
+    font-size: 14px; font-weight: 800; line-height: 1;
     min-height: 32px; min-width: 44px; padding: 8px 12px;
     border-radius: 999px; display: inline-flex; align-items: center; justify-content: center;
     box-shadow: 0 2px 8px rgba(0,0,0,0.18); pointer-events: none;
@@ -225,7 +226,7 @@
     display: flex; flex-wrap: wrap; gap: 6px; pointer-events: none; z-index: 2;
   }
   .tag {
-    font-size: 12px; font-weight: 800; padding: 6px 10px; border-radius: 999px;
+    font-size: 14px; font-weight: 800; padding: 6px 10px; border-radius: 999px;
     background: rgba(0,0,0,0.55); color: #fff;
   }
   .tag.best { background: rgba(22, 163, 74, 0.92); }
@@ -273,9 +274,9 @@
   .card-compact .meta-compact { padding: 8px; }
   .card-compact .reason { font-size: 14px; margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .card-compact .seg-switch { max-width: none; width: 100%; height: 36px; min-width: 0; }
-  .card-compact .seg-opt { min-height: 36px; font-size: 14px; }
-  .card-compact .restore-link { min-height: 36px; font-size: 14px; padding: 4px 0; }
-  .card-compact .choice-badge { min-height: 28px; min-width: 36px; font-size: 12px; font-weight: 800; padding: 6px 8px; top: 6px; right: 6px; }
+  .card-compact .seg-opt { min-height: 44px; font-size: 14px; }
+  .card-compact .restore-link { min-height: 44px; font-size: 14px; padding: 8px 0; }
+  .card-compact .choice-badge { min-height: 28px; min-width: 36px; font-size: 14px; font-weight: 800; padding: 6px 8px; top: 6px; right: 6px; }
 
   .footer {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
@@ -323,8 +324,8 @@
   .seg-thumb img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
   .seg-time {
     position: absolute; left: 0; right: 0; bottom: 0;
-    font-size: 12px; font-weight: 700; color: #fff; text-align: center;
-    padding: 4px 2px; background: linear-gradient(to top, rgba(0,0,0,0.65), transparent);
+    font-size: 14px; font-weight: 800; color: #fff; text-align: center;
+    padding: 6px 2px 5px; background: linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.55) 55%, transparent 100%);
   }
   .seg-copy { margin-top: 12px; min-height: 44px; font-size: 15px; }
   .keep-toggle {
@@ -344,29 +345,32 @@
     max-width: calc(100vw - 24px); text-align: center; pointer-events: none;
   }
 
-  .date-warn {
-    display: flex; align-items: center; gap: 8px;
+  .amber-alert {
     background: #FFF7E8; border: 1px solid rgba(196, 135, 26, 0.35);
     color: #8A5A00; border-radius: 12px; padding: 12px 14px;
-    font-size: 15px; font-weight: 700; margin: 0 0 12px; line-height: 1.4;
+    margin: 0 0 12px; line-height: 1.45; font-size: 14px; font-weight: 600;
   }
-  .date-warn.hidden { display: none !important; }
-  .unread-box {
+  .amber-alert.hidden { display: none !important; }
+  .amber-alert .alert-line { display: block; font-size: 14px; font-weight: 650; margin: 0; }
+  .amber-alert .alert-line + .alert-line { margin-top: 6px; }
+  .amber-alert .alert-files {
+    margin: 8px 0 0; padding: 0; list-style: none; font-size: 14px; font-weight: 500;
+  }
+  .amber-alert .alert-files li {
+    padding: 4px 0; word-break: break-all; color: #8A5A00; opacity: 0.9;
+  }
+  .only-bad-panel {
     background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 12px 14px; margin: 0 0 14px; box-shadow: var(--shadow);
+    padding: 16px; margin: 16px 0; box-shadow: var(--shadow);
   }
-  .unread-box.hidden { display: none !important; }
-  .unread-toggle {
-    width: 100%; display: flex; align-items: center; justify-content: space-between;
-    gap: 8px; min-height: 44px; border: none; background: transparent;
-    font-size: 15px; font-weight: 700; color: var(--warn); cursor: pointer; font-family: inherit;
-    padding: 0;
-  }
-  .unread-list { list-style: none; padding: 8px 0 0; margin: 0; }
-  .unread-list li {
+  .only-bad-panel.hidden { display: none !important; }
+  .only-bad-panel h2 { font-size: 18px; margin: 0 0 10px; font-weight: 750; color: var(--text); }
+  .only-bad-panel .alert-files { margin: 0; padding: 0; list-style: none; }
+  .only-bad-panel .alert-files li {
     font-size: 14px; color: var(--muted); padding: 8px 0;
     border-top: 1px solid var(--border); word-break: break-all;
   }
+  .only-bad-panel .alert-files li:first-child { border-top: none; }
   .more-thumbs-btn {
     grid-column: 1 / -1; width: 100%; min-height: 44px; margin-top: 2px;
     border-radius: 10px; border: 1px dashed var(--border); background: var(--chip);
@@ -405,6 +409,10 @@
         <button type="button" class="btn btn-ghost" id="btnPause">暫停</button>
       </div>
     </div>
+    <div id="onlyBadPanel" class="only-bad-panel hidden" role="status">
+      <h2>這些檔案無法讀取，請重新選照片</h2>
+      <ul class="alert-files" id="onlyBadList"></ul>
+    </div>
     <div class="home-bottom">
       <button type="button" class="adv-link" id="btnAdvToggle">進階</button>
       <div id="advPanel" class="adv-panel panel hidden">
@@ -438,13 +446,7 @@
   </div>
 
   <div id="resultScreen" class="hidden">
-    <div class="unread-box hidden" id="unreadBoxResult">
-      <button type="button" class="unread-toggle" id="btnUnreadToggleResult" aria-expanded="false">
-        <span id="unreadSummaryResult">有 0 張無法讀取</span>
-        <span class="chevron" aria-hidden="true"></span>
-      </button>
-      <ul class="unread-list hidden" id="unreadListResult"></ul>
-    </div>
+    <div class="amber-alert hidden" id="amberAlertResult" role="status"></div>
     <div class="notice result-hint" id="resultHint">
       <strong>提示：</strong>每組只顯示建議留下的那張；可展開同組其他照片微調。網頁無法刪除「照片」App 原檔。
       <button type="button" class="hint-close" id="btnHintClose" aria-label="關閉提示">×</button>
@@ -455,14 +457,7 @@
 
   <div id="finishPanel" class="hidden">
     <h2 class="del-headline" id="delHeadline">要刪 0 張</h2>
-    <div class="date-warn hidden" id="dateWarn" role="status">日期可能不準</div>
-    <div class="unread-box hidden" id="unreadBox">
-      <button type="button" class="unread-toggle" id="btnUnreadToggle" aria-expanded="false">
-        <span id="unreadSummary">有 0 張無法讀取</span>
-        <span class="chevron" aria-hidden="true"></span>
-      </button>
-      <ul class="unread-list hidden" id="unreadList"></ul>
-    </div>
+    <div class="amber-alert hidden" id="amberAlertFinish" role="status"></div>
     <p class="notice" style="margin:0 0 12px"><strong>請到「照片」App 手動刪除以下原檔。</strong>此網頁無法代你刪除。縮圖上的時間可對照 Photos。縮圖由舊到新。</p>
     <p class="status" id="delCount" style="margin-bottom:10px">0 張</p>
     <div class="del-segments" id="delSegments"></div>
@@ -499,7 +494,7 @@
   const STORE = "choices";
   const SETTINGS_KEY = "photo-cull-settings-v1";
   const HINT_KEY = "photo-cull-hint-dismissed-v1";
-  const ANALYSIS_VERSION = 4;
+  const ANALYSIS_VERSION = 5;
   const SEG_GAP_MS = 3 * 60 * 1000;
 
   let photos = [];
@@ -545,15 +540,10 @@
     delHeadline: document.getElementById("delHeadline"),
     delCount: document.getElementById("delCount"),
     delSegments: document.getElementById("delSegments"),
-    dateWarn: document.getElementById("dateWarn"),
-    unreadBox: document.getElementById("unreadBox"),
-    unreadSummary: document.getElementById("unreadSummary"),
-    unreadList: document.getElementById("unreadList"),
-    btnUnreadToggle: document.getElementById("btnUnreadToggle"),
-    unreadBoxResult: document.getElementById("unreadBoxResult"),
-    unreadSummaryResult: document.getElementById("unreadSummaryResult"),
-    unreadListResult: document.getElementById("unreadListResult"),
-    btnUnreadToggleResult: document.getElementById("btnUnreadToggleResult"),
+    amberAlertResult: document.getElementById("amberAlertResult"),
+    amberAlertFinish: document.getElementById("amberAlertFinish"),
+    onlyBadPanel: document.getElementById("onlyBadPanel"),
+    onlyBadList: document.getElementById("onlyBadList"),
     btnShare: document.getElementById("btnShare"),
     btnBackToCards: document.getElementById("btnBackToCards"),
     toast: document.getElementById("toast"),
@@ -800,7 +790,8 @@
     self.onmessage=function(e){
       const msg=e.data; const data=new Uint8ClampedArray(msg.buffer); const gray=toGray(data);
       const sharp=laplacianVariance(gray,msg.w,msg.h); const exp=exposureStats(gray);
-      self.postMessage({id:msg.id,sharp:sharp,mean:exp.mean,std:exp.std,overPct:exp.overPct,underPct:exp.underPct,
+      const edgeEnergy=Math.sqrt(Math.max(0,sharp));
+      self.postMessage({id:msg.id,sharp:sharp,mean:exp.mean,std:exp.std,edgeEnergy:edgeEnergy,overPct:exp.overPct,underPct:exp.underPct,
         hash:dHashFromGray(gray,msg.w,msg.h), aHash:aHashFromGray(gray,msg.w,msg.h)});
     };
   `;
@@ -822,8 +813,9 @@
     const worker = getMetricWorker();
     if (!worker) {
       const gray = toGray(imageData.data);
+      const sharp = laplacianVariance(gray, w, h);
       return Promise.resolve({
-        sharp: laplacianVariance(gray, w, h), ...exposureStats(gray), hash: null, aHash: null
+        sharp: sharp, ...exposureStats(gray), edgeEnergy: Math.sqrt(Math.max(0, sharp)), hash: null, aHash: null
       });
     }
     const id = ++workerReqId;
@@ -840,7 +832,8 @@
     if (!a || a.v !== ANALYSIS_VERSION || typeof a.sharp !== "number" || !a.hash || !a.thumbUrl) return false;
     item.sharp = a.sharp; item.mean = a.mean; item.overPct = a.overPct; item.underPct = a.underPct;
     item.grayStd = typeof a.grayStd === "number" ? a.grayStd : 0;
-    item.flat = !!a.flat || item.grayStd < 12;
+    item.edgeEnergy = typeof a.edgeEnergy === "number" ? a.edgeEnergy : Math.sqrt(Math.max(0, item.sharp));
+    item.flat = !!a.flat || (item.grayStd < 12 && item.edgeEnergy < 18);
     item.hash = a.hash; item.aHash = a.aHash; item.thumbUrl = a.thumbUrl;
     item.captureMs = typeof a.captureMs === "number" ? a.captureMs : item.lastModified;
     item.dateSource = a.dateSource === "exif" ? "exif" : "file";
@@ -935,7 +928,8 @@
     const metrics = await metricsViaWorker(imageData, thumb.w, thumb.h);
     item.sharp = metrics.sharp; item.mean = metrics.mean;
     item.grayStd = typeof metrics.std === "number" ? metrics.std : 0;
-    item.flat = item.grayStd < 12;
+    item.edgeEnergy = typeof metrics.edgeEnergy === "number" ? metrics.edgeEnergy : Math.sqrt(Math.max(0, item.sharp));
+    item.flat = item.grayStd < 12 && item.edgeEnergy < 18;
     item.overPct = metrics.overPct; item.underPct = metrics.underPct;
     if (metrics.hash && metrics.aHash) { item.hash = metrics.hash; item.aHash = metrics.aHash; }
     else { item.hash = dHash(thumb.ctx, thumb.w, thumb.h); item.aHash = aHash(thumb.ctx, thumb.w, thumb.h); }
@@ -950,59 +944,86 @@
       hashTh: +el.hashSlider.value, timeTh: (+el.timeSlider.value) * 1000,
     };
   }
-  function isFlat(p) {
-    return !!p.flat || (typeof p.grayStd === "number" && p.grayStd < 12);
-  }
-
-  /** Resolution-normalized absolute blur, or relative to group best. Flat ≠ blur. */
-  function isBadQuality(p, th) {
-    const flat = isFlat(p);
-    const best = typeof p.groupBestSharp === "number" ? p.groupBestSharp : 0;
-    const blurAbs = !flat && p.sharp < th.sharpTh;
-    const blurRel = !flat && best > th.sharpTh * 0.5 && p.sharp < best * 0.42;
-    const blur = blurAbs || blurRel;
+  /** Flat/monotone only when brightness is normal AND texture/edge energy is very low. */
+  function hasNormalBrightness(p, th) {
     const over = p.mean >= 200 || p.overPct >= th.overTh;
     const under = p.mean <= 45 || p.underPct >= th.underTh;
-    // Flat/solid is NOT auto-deleted for "blur"
-    return { blur: blur, flat: flat, over: over, under: under, bad: blur || over || under };
+    return !over && !under;
+  }
+  function isLowTexture(p) {
+    const stdLow = typeof p.grayStd === "number" && p.grayStd < 14;
+    const edgeLow = typeof p.edgeEnergy === "number" ? p.edgeEnergy < 18 : (p.sharp < 25);
+    // Two-color flats: low edge energy even if std a bit higher
+    return (stdLow && edgeLow) || (edgeLow && p.sharp < 40 && (p.grayStd || 0) < 28);
+  }
+  function isFlatCandidate(p, th) {
+    if (!hasNormalBrightness(p, th)) return false;
+    return !!p.flat || isLowTexture(p);
+  }
+
+  function isBadQuality(p, th) {
+    const over = p.mean >= 200 || p.overPct >= th.overTh;
+    const under = p.mean <= 45 || p.underPct >= th.underTh;
+    const flat = isFlatCandidate(p, th);
+    const best = typeof p.groupBestSharp === "number" ? p.groupBestSharp : 0;
+    // Exposure wins over flat/blur labeling
+    const blurAbs = !over && !under && !flat && p.sharp < th.sharpTh;
+    const blurRel = !over && !under && !flat && best > th.sharpTh * 0.5 && p.sharp < best * 0.42;
+    const blur = blurAbs || blurRel;
+    const bad = over || under || blur; // flat alone is NOT bad
+    return { blur: blur, flat: flat, over: over, under: under, bad: bad };
   }
 
   function autoChoiceFor(p, groupSize, th) {
     if (groupSize > 1) return p.isBest ? "keep" : "delete";
-    if (isFlat(p)) return "keep"; // 畫面單調：保留，不因低銳利度刪除
-    return isBadQuality(p, th).bad ? "delete" : "keep";
+    const q = isBadQuality(p, th);
+    if (q.over || q.under) return "delete";
+    if (q.flat) return "keep";
+    return q.bad ? "delete" : "keep";
   }
 
-  /** D: one-sentence reason */
+  function exposureReason(q, p) {
+    if (q.over && p.mean >= 220) return "明顯過曝";
+    if (q.over) return "略微過曝";
+    if (q.under && p.mean <= 25) return "明顯欠曝";
+    if (q.under) return "略微欠曝";
+    return "";
+  }
+
+  /** D: one-sentence reason — mark and reason never contradict */
   function computeReason(p, groupSize, th) {
-    // Manual overrides first (QA strings)
     if (p.userTouched) {
       if (p.choice === "keep" && p.autoChoice === "delete") return "你手動保留";
       if (p.choice === "delete" && p.autoChoice === "keep") return "你手動刪除";
     }
     const q = isBadQuality(p, th);
+    const exp = exposureReason(q, p);
+
     if (groupSize > 1) {
       if (p.isBest) {
         if (p.choice === "keep") {
+          if (exp) return exp; // shouldn't normally keep over/under as best, but if so label exposure
           if (q.flat) return "畫面單調";
           return "同組最清晰";
         }
         return "你手動刪除";
       }
+      // Non-best deleted: duplicate reason takes priority over 畫面單調
+      if (p.choice === "delete") {
+        if (exp) return exp;
+        if (q.blur) return (p.sharp < th.sharpTh) ? "模糊" : "同組較模糊";
+        return "與同組重複";
+      }
+      // Non-best but manually/kept
+      if (exp) return exp;
       if (q.flat) return "畫面單調";
-      if (q.blur) return (p.sharp < th.sharpTh) ? "模糊" : "同組較模糊";
-      if (q.over && p.mean >= 220) return "明顯過曝";
-      if (q.over) return "略微過曝";
-      if (q.under && p.mean <= 25) return "明顯欠曝";
-      if (q.under) return "略微欠曝";
       return "同組非最佳";
     }
+
+    // Single photo: exposure first, then flat, then blur
+    if (exp) return exp;
     if (q.flat) return "畫面單調";
     if (q.blur) return "模糊";
-    if (q.over && p.mean >= 220) return "明顯過曝";
-    if (q.over) return "略微過曝";
-    if (q.under && p.mean <= 25) return "明顯欠曝";
-    if (q.under) return "略微欠曝";
     if (p.choice === "keep") return "單張清晰保留";
     return "你手動刪除";
   }
@@ -1045,7 +1066,7 @@
       if (!p.userTouched) p.choice = p.autoChoice;
       const q = isBadQuality(p, th);
       p.badQuality = q.bad;
-      p.suggestDelete = (!q.flat && q.bad) || (g.length > 1 && !p.isBest);
+      p.suggestDelete = p.choice === "delete";
       p.reason = computeReason(p, g.length, th);
     });
   }
@@ -1059,7 +1080,7 @@
     if (p.analyzed && p.thumbUrl && p.hash) {
       payload.analysis = {
         v: ANALYSIS_VERSION, sharp: p.sharp, mean: p.mean, overPct: p.overPct, underPct: p.underPct,
-        grayStd: p.grayStd, flat: !!p.flat,
+        grayStd: p.grayStd, edgeEnergy: p.edgeEnergy, flat: !!p.flat,
         hash: p.hash, aHash: p.aHash, thumbUrl: p.thumbUrl, captureMs: p.captureMs, dateSource: p.dateSource,
       };
     }
@@ -1194,7 +1215,7 @@
     // Day-level only when ALL photos lack EXIF (avoid segment explosion from file mtimes).
     // Otherwise split 上午/下午 only for busy days.
     const forceDayOnly = allFileDate(photos);
-    const SPLIT_DAY = 24;
+    const SPLIT_DAY = 60;
     const segs = [];
     dayOrder.forEach(function (k) {
       const list = byDay[k];
@@ -1354,7 +1375,7 @@
 
     const hintDismissed = localStorage.getItem(HINT_KEY) === "1";
     if (el.resultHint) el.resultHint.classList.toggle("hidden", hintDismissed);
-    renderUnreadBoxes();
+    renderAmberAlerts("result");
 
     const groups = groupsOrdered();
     if (!groups.length) {
@@ -1381,28 +1402,84 @@
     setupLazyThumbs(el.cards);
   }
 
-  function thumbCellHtml(p) {
+  function thumbCellHtml(p, lazy) {
     const hm = formatHmTaipei(photoTime(p));
-    const img = p.thumbUrl
-      ? '<img src="' + p.thumbUrl + '" alt="' + escapeAttr(p.name) + '" loading="lazy" />'
-      : '<img alt="" />';
+    let img;
+    if (!p.thumbUrl) img = '<img alt="" />';
+    else if (lazy) img = '<img data-src="' + escapeAttr(p.thumbUrl) + '" alt="' + escapeAttr(p.name) + '" />';
+    else img = '<img src="' + escapeAttr(p.thumbUrl) + '" alt="' + escapeAttr(p.name) + '" loading="lazy" />';
     return '<div class="seg-thumb" title="' + escapeAttr(p.name) + '">' + img +
       '<span class="seg-time">' + escapeHtml(hm) + "</span></div>";
   }
-  function renderUnreadBoxes() {
+  let finishThumbObserver = null;
+  const finishFarUrls = new Set();
+  function setupFinishLazyThumbs(root) {
+    if (finishThumbObserver) finishThumbObserver.disconnect();
+    const imgs = root.querySelectorAll("img[data-src]");
+    if (!imgs.length) return;
+    if (!("IntersectionObserver" in window)) {
+      imgs.forEach(function (img) {
+        const src = img.getAttribute("data-src");
+        if (src) { img.src = src; img.removeAttribute("data-src"); }
+      });
+      return;
+    }
+    finishThumbObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        const img = entry.target;
+        if (entry.isIntersecting) {
+          const src = img.getAttribute("data-src");
+          if (src) {
+            img.src = src;
+            img.removeAttribute("data-src");
+            finishFarUrls.delete(src);
+          }
+          finishThumbObserver.unobserve(img);
+        }
+      });
+    }, { root: null, rootMargin: "240px 0px", threshold: 0.01 });
+    imgs.forEach(function (img) { finishThumbObserver.observe(img); });
+  }
+  function buildAmberAlertHtml(opts) {
+    opts = opts || {};
+    const lines = [];
+    if (opts.dateWarn) lines.push('<div class="alert-line">日期可能不準</div>');
+    if (opts.unreadCount > 0) {
+      lines.push('<div class="alert-line">有 ' + opts.unreadCount + " 張無法讀取</div>");
+      if (opts.showFiles && unreadableFiles.length) {
+        lines.push('<ul class="alert-files">' + unreadableFiles.map(function (name) {
+          return "<li>" + escapeHtml(name) + "</li>";
+        }).join("") + "</ul>");
+      }
+    }
+    return lines.join("");
+  }
+  function renderAmberAlerts(where) {
+    const dateWarn = photos.some(function (p) { return p.analyzed && p.dateSource !== "exif"; });
     const n = unreadableFiles.length;
-    const show = n > 0;
-    [ [el.unreadBox, el.unreadSummary, el.unreadList],
-      [el.unreadBoxResult, el.unreadSummaryResult, el.unreadListResult] ].forEach(function (triple) {
-      const box = triple[0], sum = triple[1], list = triple[2];
+    const html = buildAmberAlertHtml({ dateWarn: dateWarn, unreadCount: n, showFiles: true });
+    const targets = where === "finish"
+      ? [el.amberAlertFinish]
+      : where === "result"
+        ? [el.amberAlertResult]
+        : [el.amberAlertResult, el.amberAlertFinish];
+    targets.forEach(function (box) {
       if (!box) return;
-      box.classList.toggle("hidden", !show);
-      if (!show) return;
-      sum.textContent = "有 " + n + " 張無法讀取";
-      list.innerHTML = unreadableFiles.map(function (name) {
+      if (!html) { box.classList.add("hidden"); box.innerHTML = ""; return; }
+      box.innerHTML = html;
+      box.classList.remove("hidden");
+    });
+  }
+  function renderOnlyBadState() {
+    if (!el.onlyBadPanel) return;
+    const onlyBad = photos.length === 0 && unreadableFiles.length > 0;
+    el.onlyBadPanel.classList.toggle("hidden", !onlyBad);
+    if (onlyBad) {
+      el.onlyBadList.innerHTML = unreadableFiles.map(function (name) {
         return "<li>" + escapeHtml(name) + "</li>";
       }).join("");
-    });
+      el.progressBlock.classList.add("hidden");
+    }
   }
   function renderFinish() {
     const kept = keptPhotos();
@@ -1410,9 +1487,7 @@
     const segs = buildDeleteSegments(dels);
     el.delHeadline.textContent = "要刪 " + dels.length + " 張";
     el.delCount.textContent = dels.length + " 張 · " + segs.length + " 天";
-    const showDateWarn = dels.concat(kept).some(function (p) { return p.dateSource !== "exif"; });
-    el.dateWarn.classList.toggle("hidden", !showDateWarn);
-    renderUnreadBoxes();
+    renderAmberAlerts("finish");
     if (!segs.length) {
       el.delSegments.innerHTML = '<div class="empty" style="padding:12px 0">沒有要刪的照片</div>';
     } else {
@@ -1422,7 +1497,7 @@
         const rest = seg.photos.slice(6);
         let thumbs = initial.map(thumbCellHtml).join("");
         if (open && rest.length) {
-          thumbs += rest.map(thumbCellHtml).join("");
+          thumbs += rest.map(function (p) { return thumbCellHtml(p, true); }).join("");
         } else if (rest.length) {
           thumbs += '<button type="button" class="more-thumbs-btn" data-more-seg="' + idx + '">還有 ' + rest.length + " 張</button>";
         }
@@ -1441,6 +1516,7 @@
         );
       }).join("");
       el.delSegments._segs = segs;
+      setupFinishLazyThumbs(el.delSegments);
     }
     el.keepCount.textContent = kept.length + " 張";
     el.keepList.innerHTML = kept.map(function (p) {
@@ -1456,8 +1532,10 @@
     }
     if (!photos.length) {
       setScreen("home");
+      renderOnlyBadState();
       return;
     }
+    if (el.onlyBadPanel) el.onlyBadPanel.classList.add("hidden");
     setScreen("result");
     renderResult();
   }
@@ -1482,6 +1560,7 @@
     }
     photos = [];
     unreadableFiles = [];
+    if (el.onlyBadPanel) { el.onlyBadPanel.classList.add("hidden"); el.onlyBadList.innerHTML = ""; }
     expandedSegThumbs = {};
     showFinish = false;
     expandedGroups = {};
@@ -1504,7 +1583,7 @@
         const item = {
           id: id, file: file, name: file.name, size: file.size, lastModified: file.lastModified,
           captureMs: file.lastModified, dateSource: "file",
-          thumbUrl: null, sharp: 0, mean: 0, grayStd: 0, flat: false, overPct: 0, underPct: 0, hash: "", aHash: "",
+          thumbUrl: null, sharp: 0, mean: 0, grayStd: 0, edgeEnergy: 0, flat: false, overPct: 0, underPct: 0, hash: "", aHash: "",
           groupId: null, isBest: false, choice: "keep", autoChoice: "keep", userTouched: false,
           reason: "", labels: [], suggestDelete: false, badQuality: false, analyzed: false,
           fromCache: false, groupSize: 1,
@@ -1516,6 +1595,7 @@
           item.choice = saved.choice;
         }
         try {
+          if (!file.size) throw new Error("empty");
           if (applyCachedAnalysis(item, saved)) skippedCache++;
           else { await analyzeOne(item); analyzedFresh++; }
         } catch (err) {
@@ -1534,15 +1614,26 @@
     photos.sort(function (a, b) {
       return a.lastModified - b.lastModified || a.name.localeCompare(b.name);
     });
+    const ms = Math.round(performance.now() - t0);
+    lastRunStats = { total: files.length, analyzedFresh: analyzedFresh, skippedCache: skippedCache, ms: ms,
+      unreadable: unreadableFiles.length };
+    paused = false;
+    if (!photos.length) {
+      el.progressBlock.classList.add("hidden");
+      el.progressText.textContent = "";
+      processing = false;
+      render();
+      return;
+    }
     recomputeGroupsAndLabels();
     for (const p of photos) { if (p.analyzed) await persistChoice(p); }
-    const ms = Math.round(performance.now() - t0);
-    lastRunStats = { total: files.length, analyzedFresh: analyzedFresh, skippedCache: skippedCache, ms: ms };
-    el.progressText.textContent = "完成 " + files.length + " 張（100%）· 新分析 " + analyzedFresh +
+    el.progressText.textContent = "完成 " + photos.length + " 張（100%）· 新分析 " + analyzedFresh +
       " · 快取 " + skippedCache + " · " + (ms / 1000).toFixed(1) + "s";
-    processing = false;
-    paused = false;
+    if (unreadableFiles.length) {
+      el.progressText.textContent += " · 無法讀取 " + unreadableFiles.length;
+    }
     render();
+    processing = false;
   }
 
   // Events
@@ -1592,16 +1683,6 @@
     el.btnKeepToggle.classList.toggle("open", open);
     el.btnKeepToggle.setAttribute("aria-expanded", open ? "true" : "false");
   });
-  function wireUnreadToggle(btn, list) {
-    if (!btn || !list) return;
-    btn.addEventListener("click", function () {
-      const open = list.classList.toggle("hidden") === false;
-      btn.setAttribute("aria-expanded", open ? "true" : "false");
-      btn.classList.toggle("open", open);
-    });
-  }
-  wireUnreadToggle(el.btnUnreadToggle, el.unreadList);
-  wireUnreadToggle(el.btnUnreadToggleResult, el.unreadListResult);
 
 
   ["sharpSlider", "overSlider", "underSlider", "hashSlider", "timeSlider"].forEach(function (id) {
@@ -1705,9 +1786,9 @@
       let i = 0;
       function addBatch() {
         const chunk = rest.slice(i, i + BATCH);
-        chunk.forEach(function (p) {
-          grid.insertAdjacentHTML("beforeend", thumbCellHtml(p));
-        });
+        const html = chunk.map(function (p) { return thumbCellHtml(p, true); }).join("");
+        grid.insertAdjacentHTML("beforeend", html);
+        setupFinishLazyThumbs(grid);
         i += BATCH;
         if (i < rest.length) {
           requestAnimationFrame(addBatch);
@@ -1747,7 +1828,13 @@
     getPhotos: function () { return photos; },
     isProcessing: function () { return processing; },
     isPaused: function () { return paused; },
-    isReady: function () { return !processing && photos.length > 0 && photos.every(function (p) { return p.analyzed; }); },
+    isReady: function () {
+      if (processing) return false;
+      if (photos.length > 0) return photos.every(function (p) { return p.analyzed; });
+      // finished a run that yielded only unreadable files
+      return !!(lastRunStats && lastRunStats.unreadable > 0);
+    },
+    getUnreadable: function () { return unreadableFiles.slice(); },
     getLastRunStats: function () { return lastRunStats; },
     buildDeleteSegments: buildDeleteSegments,
     segmentCopyText: segmentCopyText,
