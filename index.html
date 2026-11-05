@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="照片篩選" />
+<meta name="theme-color" content="#0f1115" />
+<title>照片篩選工具</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%235b8cff'/%3E%3Ctext x='32' y='42' text-anchor='middle' font-size='28' fill='white'%3E相%3C/text%3E%3C/svg%3E">
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22%E7%85%A7%E7%89%87%E7%AF%A9%E9%81%B8%E5%B7%A5%E5%85%B7%22%2C%22short_name%22%3A%22%E7%AF%A9%E9%81%B8%22%2C%22display%22%3A%22standalone%22%2C%22start_url%22%3A%22.%22%2C%22background_color%22%3A%22%230f1115%22%2C%22theme_color%22%3A%22%230f1115%22%7D">
+<style>
+  :root {
+    --bg: #0f1115; --card: #1a1d24; --border: #2a2f3a; --text: #f2f4f8;
+    --muted: #9aa3b2; --accent: #5b8cff; --keep: #2ecc71; --del: #e74c3c;
+    --warn: #f0a500; --chip: #252a35;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", sans-serif;
+    -webkit-tap-highlight-color: transparent; overflow-x: hidden; max-width: 100vw;
+  }
+  body { padding-bottom: calc(96px + var(--safe-bottom)); }
+  body.screen-home { padding-bottom: calc(24px + var(--safe-bottom)); }
+  body.screen-finish { padding-bottom: calc(24px + var(--safe-bottom)); }
+  .wrap { width: 100%; max-width: 480px; margin: 0 auto; padding: 16px 14px 0; }
+  h1 { font-size: 1.35rem; margin: 12px 0 6px; font-weight: 700; text-align: center; }
+  .sub { color: var(--muted); font-size: 0.9rem; line-height: 1.5; margin: 0 0 20px; text-align: center; }
+  .notice {
+    background: #1e2430; border: 1px solid var(--border); border-radius: 12px;
+    padding: 10px 12px; font-size: 0.82rem; color: var(--muted); margin-bottom: 12px; line-height: 1.45;
+  }
+  .notice strong { color: var(--warn); font-weight: 600; }
+  .panel {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 12px; margin-bottom: 12px;
+  }
+  .btn, .file-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 48px; padding: 12px 16px; border-radius: 14px; border: none;
+    font-size: 1rem; font-weight: 700; cursor: pointer; width: 100%;
+    -webkit-appearance: none; appearance: none; color: inherit;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-keep { background: rgba(46,204,113,0.18); color: var(--keep); border: 1px solid var(--keep); }
+  .btn-del { background: rgba(231,76,60,0.18); color: var(--del); border: 1px solid var(--del); }
+  .btn-ghost { background: var(--chip); color: var(--text); border: 1px solid var(--border); font-weight: 600; }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .pick-hero { margin: 28px 0 18px; }
+  .pick-hero .file-btn {
+    min-height: 64px; font-size: 1.2rem; border-radius: 18px; position: relative; overflow: hidden;
+  }
+  .pick-hero .file-btn input {
+    position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;
+  }
+  .adv-link {
+    display: block; text-align: center; margin: 8px 0 0; padding: 10px;
+    background: none; border: none; color: var(--muted); font-size: 0.9rem;
+    text-decoration: underline; cursor: pointer; width: 100%;
+  }
+  .adv-panel { margin-top: 8px; }
+  .slider-block { margin-top: 10px; }
+  .slider-block label {
+    display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--muted); margin-bottom: 4px;
+  }
+  input[type="range"] { width: 100%; accent-color: var(--accent); }
+  .toggle-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    margin-top: 10px; font-size: 0.9rem;
+  }
+  .toggle {
+    position: relative; width: 48px; height: 28px; flex-shrink: 0;
+    background: #333947; border-radius: 999px; border: none; cursor: pointer;
+  }
+  .toggle::after {
+    content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px;
+    border-radius: 50%; background: #888;
+  }
+  .badge-soon {
+    font-size: 0.72rem; background: #3a3f4d; color: var(--muted);
+    padding: 2px 8px; border-radius: 999px; margin-left: 6px;
+  }
+  .progress-wrap { margin-top: 12px; }
+  .progress {
+    height: 10px; background: #2a2f3a; border-radius: 999px; overflow: hidden;
+  }
+  .progress > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .12s; }
+  .status { font-size: 0.82rem; color: var(--muted); margin-top: 6px; }
+  .progress-row { display: flex; gap: 8px; margin-top: 10px; }
+  .progress-row .btn { flex: 1; }
+  .section-title { font-size: 1.05rem; font-weight: 700; margin: 8px 0 10px; }
+  .top-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .top-actions .btn { flex: 1 1 140px; min-width: 0; min-height: 44px; font-size: 0.92rem; }
+  .summary-counts { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; }
+  .summary-counts span {
+    flex: 1 1 90px; min-width: 0; text-align: center;
+    background: var(--chip); border: 1px solid var(--border); border-radius: 12px;
+    padding: 10px 8px; font-size: 0.82rem; color: var(--muted);
+  }
+  .summary-counts strong { display: block; font-size: 1.25rem; color: var(--text); margin-bottom: 2px; }
+  .summary-counts .c-keep strong { color: var(--keep); }
+  .summary-counts .c-del strong { color: var(--del); }
+  .cards { display: flex; flex-direction: column; gap: 12px; }
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    overflow: hidden; width: 100%; max-width: 100%;
+  }
+  .card.keep { border-color: var(--keep); }
+  .card.delete { border-color: var(--del); }
+  .thumb-wrap {
+    position: relative; width: 100%; background: #111; aspect-ratio: 4 / 3;
+    display: flex; align-items: center; justify-content: center; overflow: hidden;
+  }
+  .thumb-wrap img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .thumb-placeholder {
+    color: var(--muted); font-size: 0.8rem;
+  }
+  .tag-row {
+    position: absolute; left: 8px; top: 8px; right: 8px;
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .tag {
+    font-size: 0.72rem; font-weight: 700; padding: 4px 8px; border-radius: 999px;
+    background: rgba(0,0,0,0.65); color: #fff;
+  }
+  .tag.best { background: rgba(46,204,113,0.95); color: #072; }
+  .tag.manual { background: rgba(91,140,255,0.95); }
+  .meta { padding: 10px 12px 12px; }
+  .fname { font-size: 0.85rem; word-break: break-all; color: var(--text); margin-bottom: 4px; font-weight: 600; }
+  .reason {
+    font-size: 0.88rem; line-height: 1.4; color: var(--text); margin-bottom: 8px;
+    padding: 8px 10px; background: #12151c; border-radius: 10px; border: 1px solid var(--border);
+  }
+  .scores { font-size: 0.75rem; color: var(--muted); line-height: 1.4; margin-bottom: 10px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .actions .btn { flex: 1 1 90px; min-width: 0; min-height: 44px; font-size: 0.9rem; }
+  .expand-btn {
+    width: 100%; margin-top: 8px; min-height: 44px; border-radius: 12px;
+    border: 1px dashed var(--border); background: #12151c; color: var(--muted);
+    font-size: 0.88rem; font-weight: 600; cursor: pointer;
+  }
+  .group-extras { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+  .group-extras.hidden { display: none !important; }
+  .footer {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+    background: rgba(15,17,21,0.97); border-top: 1px solid var(--border);
+    padding: 12px 14px calc(12px + var(--safe-bottom));
+    backdrop-filter: blur(10px);
+  }
+  .footer-inner { max-width: 480px; margin: 0 auto; }
+  .footer .btn { min-height: 56px; font-size: 1.1rem; border-radius: 16px; }
+  .empty { text-align: center; color: var(--muted); padding: 28px 12px; font-size: 0.95rem; }
+  .finish-list { list-style: none; padding: 0; margin: 0; }
+  .finish-list li {
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+    font-size: 0.88rem; word-break: break-all;
+  }
+  .hidden { display: none !important; }
+  .del-segments { display: flex; flex-direction: column; gap: 12px; }
+  .del-seg {
+    background: #12151c; border: 1px solid var(--border); border-radius: 14px;
+    padding: 12px; width: 100%; max-width: 100%; min-width: 0;
+  }
+  .del-seg-title { font-size: 0.95rem; font-weight: 700; word-break: break-word; }
+  .del-seg-meta { font-size: 0.78rem; color: var(--muted); margin: 4px 0 8px; }
+  .seg-grid { display: flex; flex-wrap: wrap; gap: 4px; width: 100%; }
+  .seg-grid img {
+    width: calc((100% - 8px) / 3); aspect-ratio: 1; object-fit: cover;
+    border-radius: 6px; background: #000; display: block;
+  }
+  .seg-copy { margin-top: 10px; min-height: 44px; font-size: 0.92rem; }
+  .toast {
+    position: fixed; left: 50%; bottom: calc(88px + var(--safe-bottom));
+    transform: translateX(-50%); background: #2a3344; color: #fff;
+    padding: 10px 16px; border-radius: 999px; font-size: 0.85rem; z-index: 50;
+    max-width: calc(100vw - 24px); text-align: center; pointer-events: none;
+  }
+</style>
+</head>
+<body class="screen-home">
+<div class="wrap" id="app">
+  <h1>照片篩選工具</h1>
+  <p class="sub" id="homeSub">照片只在這台手機處理，不會上傳。選完後自動挑出每組最佳張。</p>
+
+  <!-- A: first screen -->
+  <div id="homeScreen">
+    <div class="pick-hero">
+      <label class="file-btn btn-primary">
+        選照片
+        <input id="fileInput" type="file" accept="image/*" multiple />
+      </label>
+    </div>
+    <button type="button" class="adv-link" id="btnAdvToggle">進階</button>
+    <div id="advPanel" class="adv-panel panel hidden">
+      <div class="slider-block">
+        <label><span>清晰度門檻</span><span id="sharpLabel">80</span></label>
+        <input type="range" id="sharpSlider" min="10" max="400" step="5" value="80" />
+      </div>
+      <div class="slider-block">
+        <label><span>過曝比例門檻</span><span id="overLabel">8%</span></label>
+        <input type="range" id="overSlider" min="1" max="30" step="1" value="8" />
+      </div>
+      <div class="slider-block">
+        <label><span>欠曝比例門檻</span><span id="underLabel">12%</span></label>
+        <input type="range" id="underSlider" min="1" max="40" step="1" value="12" />
+      </div>
+      <div class="slider-block">
+        <label><span>重複相似度</span><span id="hashLabel">14</span></label>
+        <input type="range" id="hashSlider" min="0" max="24" step="1" value="14" />
+      </div>
+      <div class="slider-block">
+        <label><span>時間相近（秒）</span><span id="timeLabel">12</span></label>
+        <input type="range" id="timeSlider" min="0" max="60" step="1" value="12" />
+      </div>
+      <div class="toggle-row">
+        <span>AI 評分 <span class="badge-soon">即將推出</span></span>
+        <button type="button" class="toggle" id="aiToggle" aria-pressed="false" title="即將推出"></button>
+      </div>
+      <p class="status">調整閾值只重算尚未手動改過的照片。</p>
+    </div>
+    <div id="progressBlock" class="progress-wrap panel hidden">
+      <div class="progress"><i id="progressBar"></i></div>
+      <div class="status" id="progressText">準備中…</div>
+      <div class="progress-row">
+        <button type="button" class="btn btn-ghost" id="btnPause">暫停</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- B: result = 建議留下 -->
+  <div id="resultScreen" class="hidden">
+    <h2 class="section-title">建議留下</h2>
+    <div class="panel">
+      <div class="summary-counts" id="summaryCounts"></div>
+      <div class="top-actions">
+        <button type="button" class="btn btn-ghost" id="btnRestoreAll">全部還原</button>
+        <button type="button" class="btn btn-ghost" id="btnResultAdv">進階</button>
+        <button type="button" class="btn btn-ghost" id="btnReselect">重選照片</button>
+      </div>
+      <div id="resultAdvPanel" class="hidden">
+        <p class="status">閾值與上方「進階」相同，改完會重算未手動調整的項目。</p>
+      </div>
+      <p class="notice" style="margin:0"><strong>提示：</strong>每組只顯示建議留下的那張；可展開同組其他照片微調。網頁無法刪除「照片」App 原檔。</p>
+    </div>
+    <div id="cards" class="cards"></div>
+  </div>
+
+  <!-- G: finish -->
+  <div id="finishPanel" class="hidden">
+    <h2 class="section-title">完成：已選留</h2>
+    <div class="panel">
+      <p class="status" id="keepCount">0 張</p>
+      <ul class="finish-list" id="keepList"></ul>
+      <button type="button" class="btn btn-primary" id="btnShare" style="margin-top:10px">分享／存回已選留照片</button>
+      <p class="status" style="margin-top:8px">若裝置支援，會開啟系統分享表，可選「儲存影像」。</p>
+    </div>
+    <h2 class="section-title">建議刪除（依拍攝時段分段）</h2>
+    <div class="panel">
+      <p class="notice" style="margin:0 0 8px"><strong>請到「照片」App 手動刪除以下原檔。</strong>此網頁無法代你刪除。縮圖由舊到新、左到右，較新在較下方。</p>
+      <p class="status" id="delCount">0 張</p>
+      <div class="del-segments" id="delSegments"></div>
+    </div>
+    <button type="button" class="btn btn-ghost" id="btnBackToCards" style="margin-bottom:24px">返回繼續調整</button>
+  </div>
+</div>
+
+<div class="footer hidden" id="mainFooter">
+  <div class="footer-inner">
+    <button type="button" class="btn btn-primary" id="btnConfirm">確認</button>
+  </div>
+</div>
+<div id="toast" class="toast hidden" role="status"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  const THUMB_MAX = 512;
+  const BATCH = 6;
+  const DB_NAME = "photo-cull-v1";
+  const STORE = "choices";
+  const SETTINGS_KEY = "photo-cull-settings-v1";
+  const ANALYSIS_VERSION = 2;
+  const SEG_GAP_MS = 3 * 60 * 1000;
+
+  let photos = [];
+  let processing = false;
+  let paused = false;
+  let pauseWaiters = [];
+  let showFinish = false;
+  let expandedGroups = {};
+  let lastRunStats = { total: 0, analyzedFresh: 0, skippedCache: 0, ms: 0 };
+  let thumbObserver = null;
+
+  const el = {
+    homeScreen: document.getElementById("homeScreen"),
+    resultScreen: document.getElementById("resultScreen"),
+    finishPanel: document.getElementById("finishPanel"),
+    fileInput: document.getElementById("fileInput"),
+    btnAdvToggle: document.getElementById("btnAdvToggle"),
+    advPanel: document.getElementById("advPanel"),
+    progressBlock: document.getElementById("progressBlock"),
+    progressBar: document.getElementById("progressBar"),
+    progressText: document.getElementById("progressText"),
+    btnPause: document.getElementById("btnPause"),
+    cards: document.getElementById("cards"),
+    summaryCounts: document.getElementById("summaryCounts"),
+    btnRestoreAll: document.getElementById("btnRestoreAll"),
+    btnResultAdv: document.getElementById("btnResultAdv"),
+    resultAdvPanel: document.getElementById("resultAdvPanel"),
+    btnReselect: document.getElementById("btnReselect"),
+    mainFooter: document.getElementById("mainFooter"),
+    btnConfirm: document.getElementById("btnConfirm"),
+    keepList: document.getElementById("keepList"),
+    keepCount: document.getElementById("keepCount"),
+    delCount: document.getElementById("delCount"),
+    delSegments: document.getElementById("delSegments"),
+    btnShare: document.getElementById("btnShare"),
+    btnBackToCards: document.getElementById("btnBackToCards"),
+    toast: document.getElementById("toast"),
+    sharpSlider: document.getElementById("sharpSlider"),
+    overSlider: document.getElementById("overSlider"),
+    underSlider: document.getElementById("underSlider"),
+    hashSlider: document.getElementById("hashSlider"),
+    timeSlider: document.getElementById("timeSlider"),
+    sharpLabel: document.getElementById("sharpLabel"),
+    overLabel: document.getElementById("overLabel"),
+    underLabel: document.getElementById("underLabel"),
+    hashLabel: document.getElementById("hashLabel"),
+    timeLabel: document.getElementById("timeLabel"),
+    aiToggle: document.getElementById("aiToggle"),
+  };
+
+  function syncLabels() {
+    el.sharpLabel.textContent = el.sharpSlider.value;
+    el.overLabel.textContent = el.overSlider.value + "%";
+    el.underLabel.textContent = el.underSlider.value + "%";
+    el.hashLabel.textContent = el.hashSlider.value;
+    el.timeLabel.textContent = el.timeSlider.value;
+  }
+  function loadSettings() {
+    try {
+      const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "null");
+      if (!s) return;
+      if (s.sharp != null) el.sharpSlider.value = s.sharp;
+      if (s.over != null) el.overSlider.value = s.over;
+      if (s.under != null) el.underSlider.value = s.under;
+      if (s.hash != null) el.hashSlider.value = s.hash;
+      if (s.time != null) el.timeSlider.value = s.time;
+    } catch (_) {}
+    syncLabels();
+  }
+  function saveSettings() {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+      sharp: +el.sharpSlider.value, over: +el.overSlider.value, under: +el.underSlider.value,
+      hash: +el.hashSlider.value, time: +el.timeSlider.value,
+    }));
+  }
+
+  function fileKey(name, size, lastModified) { return name + "|" + size + "|" + lastModified; }
+
+  function openDB() {
+    return new Promise(function (resolve, reject) {
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = function () {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE);
+      };
+      req.onsuccess = function () { resolve(req.result); };
+      req.onerror = function () { reject(req.error); };
+    });
+  }
+  async function idbGet(key) {
+    try {
+      const db = await openDB();
+      return await new Promise(function (resolve, reject) {
+        const r = db.transaction(STORE, "readonly").objectStore(STORE).get(key);
+        r.onsuccess = function () { resolve(r.result); };
+        r.onerror = function () { reject(r.error); };
+      });
+    } catch (_) { return undefined; }
+  }
+  async function idbSet(key, value) {
+    try {
+      const db = await openDB();
+      await new Promise(function (resolve, reject) {
+        const tx = db.transaction(STORE, "readwrite");
+        tx.objectStore(STORE).put(value, key);
+        tx.oncomplete = function () { resolve(); };
+        tx.onerror = function () { reject(tx.error); };
+      });
+    } catch (_) {}
+  }
+  async function idbClear() {
+    try {
+      const db = await openDB();
+      await new Promise(function (resolve, reject) {
+        const tx = db.transaction(STORE, "readwrite");
+        tx.objectStore(STORE).clear();
+        tx.oncomplete = function () { resolve(); };
+        tx.onerror = function () { reject(tx.error); };
+      });
+    } catch (_) {}
+  }
+
+  function loadImageFromFile(file) {
+    return new Promise(function (resolve, reject) {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = function () { URL.revokeObjectURL(url); resolve(img); };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error(file.name)); };
+      img.src = url;
+    });
+  }
+  function drawThumb(img, maxSide) {
+    const scale = Math.min(1, maxSide / Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height));
+    const w = Math.max(1, Math.round((img.naturalWidth || img.width) * scale));
+    const h = Math.max(1, Math.round((img.naturalHeight || img.height) * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(img, 0, 0, w, h);
+    return { canvas: canvas, ctx: ctx, w: w, h: h };
+  }
+  function toGray(data) {
+    const g = new Float32Array(data.length / 4);
+    for (let i = 0, j = 0; i < data.length; i += 4, j++) {
+      g[j] = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+    }
+    return g;
+  }
+  function laplacianVariance(gray, w, h) {
+    let sw = w, sh = h, src = gray;
+    if (w > 256 || h > 256) {
+      const scale = 256 / Math.max(w, h);
+      sw = Math.max(1, Math.round(w * scale));
+      sh = Math.max(1, Math.round(h * scale));
+      const scaled = new Float32Array(sw * sh);
+      for (let y = 0; y < sh; y++) {
+        for (let x = 0; x < sw; x++) {
+          scaled[y * sw + x] = gray[Math.min(h - 1, Math.floor(y / scale)) * w + Math.min(w - 1, Math.floor(x / scale))];
+        }
+      }
+      src = scaled;
+    }
+    let sum = 0, sumSq = 0, n = 0;
+    for (let y = 1; y < sh - 1; y++) {
+      for (let x = 1; x < sw - 1; x++) {
+        const i = y * sw + x;
+        const lap = -4 * src[i] + src[i - 1] + src[i + 1] + src[i - sw] + src[i + sw];
+        sum += lap; sumSq += lap * lap; n++;
+      }
+    }
+    if (!n) return 0;
+    const mean = sum / n;
+    return sumSq / n - mean * mean;
+  }
+  function exposureStats(gray) {
+    let sum = 0, over = 0, under = 0;
+    for (let i = 0; i < gray.length; i++) {
+      const v = gray[i]; sum += v;
+      if (v >= 240) over++;
+      if (v <= 18) under++;
+    }
+    const n = gray.length;
+    return { mean: sum / n, overPct: (over / n) * 100, underPct: (under / n) * 100 };
+  }
+  function dHash(ctx, w, h) {
+    const c = document.createElement("canvas"); c.width = 9; c.height = 8;
+    const x = c.getContext("2d", { willReadFrequently: true });
+    x.drawImage(ctx.canvas, 0, 0, w, h, 0, 0, 9, 8);
+    const data = x.getImageData(0, 0, 9, 8).data;
+    let bits = "";
+    for (let row = 0; row < 8; row++) {
+      for (let col = 0; col < 8; col++) {
+        const i1 = (row * 9 + col) * 4, i2 = (row * 9 + col + 1) * 4;
+        const g1 = 0.299 * data[i1] + 0.587 * data[i1 + 1] + 0.114 * data[i1 + 2];
+        const g2 = 0.299 * data[i2] + 0.587 * data[i2 + 1] + 0.114 * data[i2 + 2];
+        bits += g1 < g2 ? "1" : "0";
+      }
+    }
+    return bits;
+  }
+  function aHash(ctx, w, h) {
+    const c = document.createElement("canvas"); c.width = 8; c.height = 8;
+    const x = c.getContext("2d", { willReadFrequently: true });
+    x.drawImage(ctx.canvas, 0, 0, w, h, 0, 0, 8, 8);
+    const data = x.getImageData(0, 0, 8, 8).data;
+    const gray = []; let sum = 0;
+    for (let i = 0; i < 64; i++) {
+      const v = 0.299 * data[i * 4] + 0.587 * data[i * 4 + 1] + 0.114 * data[i * 4 + 2];
+      gray.push(v); sum += v;
+    }
+    const avg = sum / 64;
+    return gray.map(function (v) { return v >= avg ? "1" : "0"; }).join("");
+  }
+  function hamming(a, b) {
+    let d = 0; const n = Math.min(a.length, b.length);
+    for (let i = 0; i < n; i++) if (a[i] !== b[i]) d++;
+    return d + Math.abs(a.length - b.length);
+  }
+  function hashDistance(a, b) {
+    return Math.min(hamming(a.hash, b.hash), hamming(a.aHash, b.aHash));
+  }
+  function qualityScore(p) {
+    return p.sharp - Math.abs(p.mean - 120) * 0.5 - p.overPct - p.underPct * 0.5;
+  }
+  function yieldToUI() { return new Promise(function (r) { setTimeout(r, 0); }); }
+
+  const workerCode = `
+    function toGray(data) {
+      const g = new Float32Array(data.length / 4);
+      for (let i = 0, j = 0; i < data.length; i += 4, j++) g[j] = 0.299*data[i]+0.587*data[i+1]+0.114*data[i+2];
+      return g;
+    }
+    function laplacianVariance(gray, w, h) {
+      let sw=w, sh=h, src=gray;
+      if (w>256||h>256) {
+        const scale=256/Math.max(w,h); sw=Math.max(1,Math.round(w*scale)); sh=Math.max(1,Math.round(h*scale));
+        const scaled=new Float32Array(sw*sh);
+        for (let y=0;y<sh;y++) for (let x=0;x<sw;x++) scaled[y*sw+x]=gray[Math.min(h-1,Math.floor(y/scale))*w+Math.min(w-1,Math.floor(x/scale))];
+        src=scaled;
+      }
+      let sum=0,sumSq=0,n=0;
+      for (let y=1;y<sh-1;y++) for (let x=1;x<sw-1;x++) {
+        const i=y*sw+x; const lap=-4*src[i]+src[i-1]+src[i+1]+src[i-sw]+src[i+sw];
+        sum+=lap; sumSq+=lap*lap; n++;
+      }
+      if(!n) return 0; const mean=sum/n; return sumSq/n-mean*mean;
+    }
+    function exposureStats(gray) {
+      let sum=0,over=0,under=0;
+      for (let i=0;i<gray.length;i++){ const v=gray[i]; sum+=v; if(v>=240)over++; if(v<=18)under++; }
+      const n=gray.length; return {mean:sum/n, overPct:(over/n)*100, underPct:(under/n)*100};
+    }
+    function dHashFromGray(gray,w,h){
+      const bits=[];
+      for(let row=0;row<8;row++) for(let col=0;col<8;col++){
+        const x1=Math.floor((col/9)*w), x2=Math.floor(((col+1)/9)*w), y=Math.floor((row/8)*h);
+        const g1=gray[y*w+Math.min(w-1,x1)], g2=gray[y*w+Math.min(w-1,x2)];
+        bits.push(g1<g2?"1":"0");
+      }
+      return bits.join("");
+    }
+    function aHashFromGray(gray,w,h){
+      const cells=[]; let sum=0;
+      for(let row=0;row<8;row++) for(let col=0;col<8;col++){
+        const x0=Math.floor((col/8)*w), x1=Math.floor(((col+1)/8)*w);
+        const y0=Math.floor((row/8)*h), y1=Math.floor(((row+1)/8)*h);
+        let s=0,c=0;
+        for(let y=y0;y<Math.max(y0+1,y1);y++) for(let x=x0;x<Math.max(x0+1,x1);x++){ s+=gray[Math.min(h-1,y)*w+Math.min(w-1,x)]; c++; }
+        const v=s/c; cells.push(v); sum+=v;
+      }
+      const avg=sum/64; return cells.map(function(v){return v>=avg?"1":"0";}).join("");
+    }
+    self.onmessage=function(e){
+      const msg=e.data; const data=new Uint8ClampedArray(msg.buffer); const gray=toGray(data);
+      const sharp=laplacianVariance(gray,msg.w,msg.h); const exp=exposureStats(gray);
+      self.postMessage({id:msg.id,sharp:sharp,mean:exp.mean,overPct:exp.overPct,underPct:exp.underPct,
+        hash:dHashFromGray(gray,msg.w,msg.h), aHash:aHashFromGray(gray,msg.w,msg.h)});
+    };
+  `;
+  let metricWorker = null, workerReqId = 0;
+  const workerWaiters = {};
+  function getMetricWorker() {
+    if (metricWorker) return metricWorker;
+    try {
+      const url = URL.createObjectURL(new Blob([workerCode], { type: "text/javascript" }));
+      metricWorker = new Worker(url);
+      metricWorker.onmessage = function (e) {
+        const w = workerWaiters[e.data.id];
+        if (w) { delete workerWaiters[e.data.id]; w.resolve(e.data); }
+      };
+    } catch (err) { metricWorker = null; }
+    return metricWorker;
+  }
+  function metricsViaWorker(imageData, w, h) {
+    const worker = getMetricWorker();
+    if (!worker) {
+      const gray = toGray(imageData.data);
+      return Promise.resolve({
+        sharp: laplacianVariance(gray, w, h), ...exposureStats(gray), hash: null, aHash: null
+      });
+    }
+    const id = ++workerReqId;
+    return new Promise(function (resolve) {
+      workerWaiters[id] = { resolve: resolve };
+      const copy = imageData.data.buffer.slice(0);
+      worker.postMessage({ id: id, buffer: copy, w: w, h: h }, [copy]);
+    });
+  }
+
+  function applyCachedAnalysis(item, saved) {
+    const a = saved && saved.analysis;
+    if (!a || a.v !== ANALYSIS_VERSION || typeof a.sharp !== "number" || !a.hash || !a.thumbUrl) return false;
+    item.sharp = a.sharp; item.mean = a.mean; item.overPct = a.overPct; item.underPct = a.underPct;
+    item.hash = a.hash; item.aHash = a.aHash; item.thumbUrl = a.thumbUrl;
+    item.analyzed = true; item.fromCache = true;
+    return true;
+  }
+  async function analyzeOne(item) {
+    const img = await loadImageFromFile(item.file);
+    const thumb = drawThumb(img, THUMB_MAX);
+    img.src = "";
+    const imageData = thumb.ctx.getImageData(0, 0, thumb.w, thumb.h);
+    const metrics = await metricsViaWorker(imageData, thumb.w, thumb.h);
+    item.sharp = metrics.sharp; item.mean = metrics.mean;
+    item.overPct = metrics.overPct; item.underPct = metrics.underPct;
+    if (metrics.hash && metrics.aHash) { item.hash = metrics.hash; item.aHash = metrics.aHash; }
+    else { item.hash = dHash(thumb.ctx, thumb.w, thumb.h); item.aHash = aHash(thumb.ctx, thumb.w, thumb.h); }
+    item.thumbUrl = thumb.canvas.toDataURL("image/jpeg", 0.55);
+    item.analyzed = true; item.fromCache = false;
+    thumb.canvas.width = 0; thumb.canvas.height = 0;
+  }
+
+  function thresholds() {
+    return {
+      sharpTh: +el.sharpSlider.value, overTh: +el.overSlider.value, underTh: +el.underSlider.value,
+      hashTh: +el.hashSlider.value, timeTh: (+el.timeSlider.value) * 1000,
+    };
+  }
+  function isBadQuality(p, th) {
+    const blur = p.sharp < th.sharpTh;
+    const over = p.mean >= 200 || p.overPct >= th.overTh;
+    const under = p.mean <= 45 || p.underPct >= th.underTh;
+    return { blur: blur, over: over, under: under, bad: blur || over || under };
+  }
+
+  function autoChoiceFor(p, groupSize, th) {
+    if (groupSize > 1) return p.isBest ? "keep" : "delete";
+    return isBadQuality(p, th).bad ? "delete" : "keep";
+  }
+
+  /** D: one-sentence reason */
+  function computeReason(p, groupSize, th) {
+    const q = isBadQuality(p, th);
+    if (groupSize > 1) {
+      if (p.isBest) {
+        if (p.choice === "keep") return "同組最清晰";
+        return "同組最佳但已手動改刪";
+      }
+      if (q.blur) return "同組較模糊";
+      if (q.over && p.mean >= 220) return "明顯過曝";
+      if (q.over) return "略微過曝";
+      if (q.under && p.mean <= 25) return "明顯欠曝";
+      if (q.under) return "略微欠曝";
+      return "同組非最佳";
+    }
+    if (q.blur) return "模糊";
+    if (q.over && p.mean >= 220) return "明顯過曝";
+    if (q.over) return "略微過曝";
+    if (q.under && p.mean <= 25) return "明顯欠曝";
+    if (q.under) return "略微欠曝";
+    if (p.choice === "keep") return "單張清晰保留";
+    return "單張已手動改刪";
+  }
+
+  function recomputeGroupsAndLabels() {
+    const th = thresholds();
+    const analyzed = photos.filter(function (p) { return p.analyzed; });
+    analyzed.forEach(function (p) { p.groupId = null; p.isBest = false; });
+    let gid = 0;
+    for (let i = 0; i < analyzed.length; i++) {
+      const a = analyzed[i];
+      if (a.groupId != null) continue;
+      a.groupId = gid;
+      for (let j = i + 1; j < analyzed.length; j++) {
+        const b = analyzed[j];
+        if (b.groupId != null) continue;
+        const dist = hashDistance(a, b);
+        const timeOk = Math.abs(a.lastModified - b.lastModified) <= th.timeTh;
+        if (dist <= 4 || (timeOk && dist <= th.hashTh)) b.groupId = gid;
+      }
+      gid++;
+    }
+    const byGroup = {};
+    analyzed.forEach(function (p) {
+      if (!byGroup[p.groupId]) byGroup[p.groupId] = [];
+      byGroup[p.groupId].push(p);
+    });
+    Object.keys(byGroup).forEach(function (k) {
+      const g = byGroup[k];
+      g.sort(function (a, b) { return qualityScore(b) - qualityScore(a); });
+      g[0].isBest = true;
+    });
+    analyzed.forEach(function (p) {
+      const g = byGroup[p.groupId] || [p];
+      const q = isBadQuality(p, th);
+      if (!p.userTouched) p.choice = autoChoiceFor(p, g.length, th);
+      p.autoChoice = autoChoiceFor(p, g.length, th);
+      p.badQuality = q.bad;
+      p.suggestDelete = q.bad || (g.length > 1 && !p.isBest);
+      p.reason = computeReason(p, g.length, th);
+      p.groupSize = g.length;
+    });
+  }
+
+  async function persistChoice(p) {
+    const prev = (await idbGet(p.id)) || {};
+    const payload = {
+      choice: p.choice, userTouched: !!p.userTouched, ts: Date.now(),
+      analysis: prev.analysis || null,
+    };
+    if (p.analyzed && p.thumbUrl && p.hash) {
+      payload.analysis = {
+        v: ANALYSIS_VERSION, sharp: p.sharp, mean: p.mean, overPct: p.overPct, underPct: p.underPct,
+        hash: p.hash, aHash: p.aHash, thumbUrl: p.thumbUrl,
+      };
+    }
+    await idbSet(p.id, payload);
+  }
+
+  function keptPhotos() { return photos.filter(function (p) { return p.analyzed && p.choice === "keep"; }); }
+  function deletedPhotos() { return photos.filter(function (p) { return p.analyzed && p.choice === "delete"; }); }
+
+  function groupsOrdered() {
+    const map = {};
+    photos.filter(function (p) { return p.analyzed; }).forEach(function (p) {
+      if (!map[p.groupId]) map[p.groupId] = [];
+      map[p.groupId].push(p);
+    });
+    return Object.keys(map).map(Number).sort(function (a, b) {
+      const ta = Math.min.apply(null, map[a].map(function (p) { return p.lastModified; }));
+      const tb = Math.min.apply(null, map[b].map(function (p) { return p.lastModified; }));
+      return ta - tb;
+    }).map(function (gid) {
+      const g = map[gid].slice().sort(function (a, b) {
+        if (a.isBest !== b.isBest) return a.isBest ? -1 : 1;
+        return qualityScore(b) - qualityScore(a);
+      });
+      return { gid: gid, photos: g, best: g.find(function (p) { return p.isBest; }) || g[0] };
+    });
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c];
+    });
+  }
+  function escapeAttr(s) { return escapeHtml(s).replace(/`/g, "&#96;"); }
+
+  function showToast(msg) {
+    el.toast.textContent = msg;
+    el.toast.classList.remove("hidden");
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(function () { el.toast.classList.add("hidden"); }, 1600);
+  }
+  async function copyText(text) {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text); showToast("已複製刪除清單"); return;
+      }
+    } catch (_) {}
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.left = "-9999px";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); showToast("已複製刪除清單"); }
+    catch (_) { showToast("複製失敗"); }
+    document.body.removeChild(ta);
+  }
+
+  function pad2(n) { return (n < 10 ? "0" : "") + n; }
+  function formatDateTaipei(ms) {
+    try {
+      return new Intl.DateTimeFormat("zh-TW", {
+        timeZone: "Asia/Taipei", year: "numeric", month: "2-digit", day: "2-digit", weekday: "short"
+      }).format(new Date(ms));
+    } catch (_) {
+      const d = new Date(ms);
+      return d.getFullYear() + "/" + pad2(d.getMonth() + 1) + "/" + pad2(d.getDate());
+    }
+  }
+  function formatTimeTaipei(ms) {
+    try {
+      return new Intl.DateTimeFormat("zh-TW", {
+        timeZone: "Asia/Taipei", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false
+      }).format(new Date(ms));
+    } catch (_) {
+      const d = new Date(ms);
+      return pad2(d.getHours()) + ":" + pad2(d.getMinutes()) + ":" + pad2(d.getSeconds());
+    }
+  }
+  function formatDateTimeRange(startMs, endMs) {
+    const t0 = formatTimeTaipei(startMs), t1 = formatTimeTaipei(endMs);
+    if (formatDateTaipei(startMs) === formatDateTaipei(endMs)) return formatDateTaipei(startMs) + " " + t0 + " – " + t1;
+    return formatDateTaipei(startMs) + " " + t0 + " – " + formatDateTaipei(endMs) + " " + t1;
+  }
+  function buildDeleteSegments(dels) {
+    const sorted = dels.slice().sort(function (a, b) {
+      return a.lastModified - b.lastModified || a.name.localeCompare(b.name);
+    });
+    const segs = [];
+    for (let i = 0; i < sorted.length; i++) {
+      const p = sorted[i];
+      const last = segs[segs.length - 1];
+      if (!last || p.lastModified - last.endMs > SEG_GAP_MS) {
+        segs.push({ photos: [p], startMs: p.lastModified, endMs: p.lastModified });
+      } else {
+        last.photos.push(p); last.endMs = p.lastModified;
+      }
+    }
+    return segs;
+  }
+  function segmentCopyText(seg) {
+    const lines = [
+      formatDateTimeRange(seg.startMs, seg.endMs) + "（" + seg.photos.length + " 張）",
+      "開始：" + formatDateTaipei(seg.startMs) + " " + formatTimeTaipei(seg.startMs),
+      "結束：" + formatDateTaipei(seg.endMs) + " " + formatTimeTaipei(seg.endMs),
+      "檔名：",
+    ];
+    seg.photos.forEach(function (p) { lines.push(p.name); });
+    return lines.join("\n");
+  }
+
+  function cardHtml(p, opts) {
+    opts = opts || {};
+    const cls = ["card", p.choice === "keep" ? "keep" : "delete"];
+    const tags = [];
+    if (p.isBest && p.groupSize > 1) tags.push('<span class="tag best">建議留下</span>');
+    if (p.userTouched) tags.push('<span class="tag manual">手動</span>');
+    const showRestore = p.userTouched && p.choice !== p.autoChoice;
+    return (
+      '<article class="' + cls.join(" ") + '" data-id="' + escapeAttr(p.id) + '">' +
+        '<div class="thumb-wrap">' +
+          '<span class="thumb-placeholder">載入中…</span>' +
+          '<img data-src="' + (p.thumbUrl ? escapeAttr(p.thumbUrl) : "") + '" alt="" />' +
+          '<div class="tag-row">' + tags.join("") + "</div>" +
+        "</div>" +
+        '<div class="meta">' +
+          '<div class="fname">' + escapeHtml(p.name) + "</div>" +
+          '<div class="reason">' + escapeHtml(p.reason || "") + "</div>" +
+          '<div class="scores">清晰度 ' + Math.round(p.sharp) + " · 亮度 " + Math.round(p.mean) + "</div>" +
+          '<div class="actions">' +
+            '<button type="button" class="btn btn-keep" data-act="keep">' + (p.choice === "keep" ? "✓ 留" : "留") + "</button>" +
+            '<button type="button" class="btn btn-del" data-act="delete">' + (p.choice === "delete" ? "✓ 刪" : "刪") + "</button>" +
+            (showRestore || opts.forceRestore
+              ? '<button type="button" class="btn btn-ghost" data-act="restore">還原</button>'
+              : '<button type="button" class="btn btn-ghost" data-act="restore">還原</button>') +
+          "</div>" +
+        "</div>" +
+      "</article>"
+    );
+  }
+
+  function setupLazyThumbs(root) {
+    if (thumbObserver) thumbObserver.disconnect();
+    const imgs = root.querySelectorAll("img[data-src]");
+    if (!("IntersectionObserver" in window)) {
+      imgs.forEach(function (img) {
+        if (img.getAttribute("data-src")) {
+          img.src = img.getAttribute("data-src");
+          img.removeAttribute("data-src");
+          const ph = img.parentElement && img.parentElement.querySelector(".thumb-placeholder");
+          if (ph) ph.remove();
+        }
+      });
+      return;
+    }
+    thumbObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        const img = entry.target;
+        const src = img.getAttribute("data-src");
+        if (src) {
+          img.src = src;
+          img.removeAttribute("data-src");
+          img.onload = function () {
+            const ph = img.parentElement && img.parentElement.querySelector(".thumb-placeholder");
+            if (ph) ph.remove();
+          };
+        }
+        thumbObserver.unobserve(img);
+      });
+    }, { rootMargin: "120px 0px", threshold: 0.01 });
+    imgs.forEach(function (img) { thumbObserver.observe(img); });
+  }
+
+  function setScreen(mode) {
+    document.body.classList.remove("screen-home", "screen-result", "screen-finish");
+    document.body.classList.add("screen-" + mode);
+    el.homeScreen.classList.toggle("hidden", mode !== "home");
+    el.resultScreen.classList.toggle("hidden", mode !== "result");
+    el.finishPanel.classList.toggle("hidden", mode !== "finish");
+    el.mainFooter.classList.toggle("hidden", mode !== "result");
+    // A: hide thresholds on home unless 進階 open; never show on finish
+    if (mode !== "home") el.advPanel.classList.add("hidden");
+  }
+
+  function renderResult() {
+    const kept = keptPhotos();
+    const dels = deletedPhotos();
+    const total = photos.filter(function (p) { return p.analyzed; }).length;
+    el.summaryCounts.innerHTML =
+      '<span class="c-keep"><strong>' + kept.length + "</strong>留下</span>" +
+      '<span class="c-del"><strong>' + dels.length + "</strong>刪除</span>" +
+      "<span><strong>" + total + "</strong>共</span>";
+
+    const groups = groupsOrdered();
+    if (!groups.length) {
+      el.cards.innerHTML = '<div class="empty">尚無結果</div>';
+      return;
+    }
+    el.cards.innerHTML = groups.map(function (g) {
+      const others = g.photos.filter(function (p) { return p !== g.best; });
+      const open = !!expandedGroups[g.gid];
+      let html = '<div class="group-block" data-gid="' + g.gid + '">' + cardHtml(g.best);
+      if (others.length) {
+        html += '<button type="button" class="expand-btn" data-expand="' + g.gid + '">' +
+          (open ? "收合同組照片" : ("展開 " + others.length + " 張同組照片")) + "</button>";
+        html += '<div class="group-extras' + (open ? "" : " hidden") + '" data-extras="' + g.gid + '">' +
+          others.map(function (p) { return cardHtml(p); }).join("") + "</div>";
+      }
+      html += "</div>";
+      return html;
+    }).join("");
+    setupLazyThumbs(el.cards);
+  }
+
+  function renderFinish() {
+    const kept = keptPhotos();
+    const dels = deletedPhotos();
+    el.keepCount.textContent = kept.length + " 張";
+    el.keepList.innerHTML = kept.map(function (p) {
+      return "<li>" + escapeHtml(p.name) + " · " + escapeHtml(p.reason || "") + "</li>";
+    }).join("") || "<li>（無）</li>";
+    const segs = buildDeleteSegments(dels);
+    el.delCount.textContent = dels.length + " 張 · " + segs.length + " 個時段";
+    if (!segs.length) {
+      el.delSegments.innerHTML = '<div class="empty" style="padding:12px 0">沒有要刪的照片</div>';
+    } else {
+      el.delSegments.innerHTML = segs.map(function (seg, idx) {
+        const thumbs = seg.photos.map(function (p) {
+          return p.thumbUrl
+            ? '<img src="' + p.thumbUrl + '" alt="' + escapeAttr(p.name) + '" title="' + escapeAttr(p.name) + '" />'
+            : '<img alt="" />';
+        }).join("");
+        return (
+          '<section class="del-seg" data-seg="' + idx + '">' +
+            '<div class="del-seg-title">時段 ' + (idx + 1) + " · " + escapeHtml(formatDateTimeRange(seg.startMs, seg.endMs)) + "</div>" +
+            '<div class="del-seg-meta">' + seg.photos.length + " 張</div>" +
+            '<div class="seg-grid">' + thumbs + "</div>" +
+            '<button type="button" class="btn btn-ghost seg-copy" data-copy-seg="' + idx + '">複製刪除清單</button>' +
+          "</section>"
+        );
+      }).join("");
+      el.delSegments._segs = segs;
+    }
+  }
+
+  function render() {
+    if (showFinish) {
+      setScreen("finish");
+      renderFinish();
+      return;
+    }
+    if (!photos.length) {
+      setScreen("home");
+      return;
+    }
+    setScreen("result");
+    renderResult();
+  }
+
+  async function waitIfPaused() {
+    while (paused) {
+      await new Promise(function (resolve) { pauseWaiters.push(resolve); });
+    }
+  }
+
+  async function processFiles(fileList) {
+    if (processing) return;
+    processing = true; paused = false; pauseWaiters = [];
+    el.btnPause.textContent = "暫停";
+    const files = Array.prototype.slice.call(fileList).filter(function (f) {
+      return f.type.indexOf("image/") === 0 || /\.(jpe?g|png|gif|webp|heic|heif)$/i.test(f.name);
+    });
+    if (!files.length) {
+      processing = false;
+      alert("沒有可讀取的影像檔");
+      return;
+    }
+    photos = [];
+    showFinish = false;
+    expandedGroups = {};
+    setScreen("home");
+    el.progressBlock.classList.remove("hidden");
+    el.advPanel.classList.add("hidden");
+    el.progressBar.style.width = "0%";
+    el.progressText.textContent = "0 / " + files.length + "（0%）";
+    getMetricWorker();
+
+    const t0 = performance.now();
+    let skippedCache = 0, analyzedFresh = 0;
+
+    for (let i = 0; i < files.length; i += BATCH) {
+      await waitIfPaused();
+      if (!processing) break;
+      const chunk = files.slice(i, i + BATCH);
+      await Promise.all(chunk.map(async function (file) {
+        const id = fileKey(file.name, file.size, file.lastModified);
+        const item = {
+          id: id, file: file, name: file.name, size: file.size, lastModified: file.lastModified,
+          thumbUrl: null, sharp: 0, mean: 0, overPct: 0, underPct: 0, hash: "", aHash: "",
+          groupId: null, isBest: false, choice: "keep", autoChoice: "keep", userTouched: false,
+          reason: "", labels: [], suggestDelete: false, badQuality: false, analyzed: false,
+          fromCache: false, groupSize: 1,
+        };
+        const saved = await idbGet(id);
+        if (saved && saved.userTouched && (saved.choice === "keep" || saved.choice === "delete")) {
+          item.choice = saved.choice; item.userTouched = true;
+        } else if (saved && (saved.choice === "keep" || saved.choice === "delete")) {
+          item.choice = saved.choice;
+        }
+        try {
+          if (applyCachedAnalysis(item, saved)) skippedCache++;
+          else { await analyzeOne(item); analyzedFresh++; }
+        } catch (err) {
+          console.warn(err); item.analyzed = false;
+        }
+        photos.push(item);
+      }));
+      const done = Math.min(i + BATCH, files.length);
+      const pct = Math.round((done / files.length) * 100);
+      el.progressBar.style.width = pct + "%";
+      el.progressText.textContent = done + " / " + files.length + "（" + pct + "%）· 快取 " + skippedCache;
+      await yieldToUI();
+    }
+
+    photos.sort(function (a, b) {
+      return a.lastModified - b.lastModified || a.name.localeCompare(b.name);
+    });
+    recomputeGroupsAndLabels();
+    for (const p of photos) { if (p.analyzed) await persistChoice(p); }
+    const ms = Math.round(performance.now() - t0);
+    lastRunStats = { total: files.length, analyzedFresh: analyzedFresh, skippedCache: skippedCache, ms: ms };
+    el.progressText.textContent = "完成 " + files.length + " 張（100%）· 新分析 " + analyzedFresh +
+      " · 快取 " + skippedCache + " · " + (ms / 1000).toFixed(1) + "s";
+    processing = false;
+    paused = false;
+    render();
+  }
+
+  // Events
+  el.btnAdvToggle.addEventListener("click", function () {
+    el.advPanel.classList.toggle("hidden");
+  });
+  el.btnResultAdv.addEventListener("click", function () {
+    // move/show same sliders under result: open home adv panel content by toggling a clone note + scroll home is awkward;
+    // instead unhide advPanel temporarily inside result by relocating — simplest: toggle advPanel visibility attached under resultAdvPanel
+    const open = el.resultAdvPanel.classList.toggle("hidden") === false;
+    if (open) {
+      el.resultAdvPanel.appendChild(el.advPanel);
+      el.advPanel.classList.remove("hidden");
+    } else {
+      document.getElementById("homeScreen").appendChild(el.advPanel);
+      el.advPanel.classList.add("hidden");
+    }
+  });
+  el.btnReselect.addEventListener("click", function () {
+    photos = []; showFinish = false; el.fileInput.value = "";
+    document.getElementById("homeScreen").appendChild(el.advPanel);
+    el.advPanel.classList.add("hidden");
+    el.progressBlock.classList.add("hidden");
+    setScreen("home");
+  });
+
+  ["sharpSlider", "overSlider", "underSlider", "hashSlider", "timeSlider"].forEach(function (id) {
+    el[id].addEventListener("input", function () {
+      syncLabels(); saveSettings();
+      if (photos.some(function (p) { return p.analyzed; })) {
+        recomputeGroupsAndLabels();
+        render();
+      }
+    });
+  });
+  el.aiToggle.addEventListener("click", function () {
+    alert("AI 評分即將推出。目前只用本地偵測，不會送出網路請求。");
+  });
+
+  el.fileInput.addEventListener("change", function (e) {
+    if (e.target.files && e.target.files.length) processFiles(e.target.files);
+  });
+
+  el.btnPause.addEventListener("click", function () {
+    if (!processing) return;
+    paused = !paused;
+    el.btnPause.textContent = paused ? "繼續" : "暫停";
+    if (!paused) {
+      const waiters = pauseWaiters.splice(0);
+      waiters.forEach(function (w) { w(); });
+    }
+  });
+
+  // F: visibilitychange — persist + don't lose; resume waiters stay paused until user continues
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "hidden") {
+      // flush current choices
+      photos.forEach(function (p) {
+        if (p.analyzed) persistChoice(p);
+      });
+    }
+  });
+
+  el.cards.addEventListener("click", async function (e) {
+    const expand = e.target.closest("[data-expand]");
+    if (expand) {
+      const gid = +expand.getAttribute("data-expand");
+      expandedGroups[gid] = !expandedGroups[gid];
+      renderResult();
+      return;
+    }
+    const btn = e.target.closest("[data-act]");
+    if (!btn) return;
+    const card = btn.closest("[data-id]");
+    if (!card) return;
+    const p = photos.find(function (x) { return x.id === card.getAttribute("data-id"); });
+    if (!p) return;
+    const act = btn.getAttribute("data-act");
+    if (act === "keep") { p.choice = "keep"; p.userTouched = true; }
+    else if (act === "delete") { p.choice = "delete"; p.userTouched = true; }
+    else if (act === "restore") {
+      p.userTouched = false;
+      p.choice = p.autoChoice;
+    }
+    const th = thresholds();
+    p.reason = computeReason(p, p.groupSize || 1, th);
+    await persistChoice(p);
+    renderResult();
+  });
+
+  el.btnRestoreAll.addEventListener("click", async function () {
+    photos.forEach(function (p) {
+      if (!p.analyzed) return;
+      p.userTouched = false;
+      p.choice = p.autoChoice;
+      p.reason = computeReason(p, p.groupSize || 1, thresholds());
+    });
+    for (const p of photos) { if (p.analyzed) await persistChoice(p); }
+    showToast("已全部還原為自動建議");
+    renderResult();
+  });
+
+  el.btnConfirm.addEventListener("click", function () {
+    if (!photos.length) return;
+    showFinish = true;
+    render();
+  });
+  el.btnBackToCards.addEventListener("click", function () {
+    showFinish = false;
+    render();
+  });
+  el.delSegments.addEventListener("click", async function (e) {
+    const btn = e.target.closest("[data-copy-seg]");
+    if (!btn) return;
+    const segs = el.delSegments._segs || [];
+    const seg = segs[+btn.getAttribute("data-copy-seg")];
+    if (seg) await copyText(segmentCopyText(seg));
+  });
+  el.btnShare.addEventListener("click", async function () {
+    const kept = keptPhotos();
+    if (!kept.length) { alert("尚未選留任何照片"); return; }
+    const files = kept.map(function (p) { return p.file; });
+    try {
+      if (navigator.canShare && navigator.canShare({ files: files })) {
+        await navigator.share({ files: files, title: "已選留照片" }); return;
+      }
+    } catch (err) {
+      if (err && err.name === "AbortError") return;
+    }
+    alert("此瀏覽器不支援一次分享多個檔案。");
+  });
+
+  loadSettings();
+  setScreen("home");
+
+  window.__photoCull = {
+    processFiles: processFiles,
+    getPhotos: function () { return photos; },
+    isProcessing: function () { return processing; },
+    isPaused: function () { return paused; },
+    isReady: function () { return !processing && photos.length > 0 && photos.every(function (p) { return p.analyzed; }); },
+    getLastRunStats: function () { return lastRunStats; },
+    buildDeleteSegments: buildDeleteSegments,
+    segmentCopyText: segmentCopyText,
+    recompute: function () { recomputeGroupsAndLabels(); render(); },
+    render: render,
+  };
+})();
+</script>
+</body>
+</html>
