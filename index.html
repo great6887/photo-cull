@@ -320,6 +320,17 @@
     display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
     width: 100%; max-width: 100%;
   }
+  .seg-hour-div {
+    grid-column: 1 / -1;
+    display: flex; align-items: center; gap: 10px;
+    margin: 6px 0 2px; padding: 0; min-height: 28px;
+    color: #6B7280; font-size: 14px; font-weight: 700; line-height: 1.2;
+    pointer-events: none; user-select: none;
+  }
+  .seg-hour-div::before, .seg-hour-div::after {
+    content: ""; flex: 1 1 auto; height: 1px; background: #D1D5DB; min-width: 12px;
+  }
+  .seg-hour-div span { flex: 0 0 auto; letter-spacing: 0.02em; }
   .seg-thumb { position: relative; width: 100%; border-radius: 8px; overflow: hidden; background: var(--chip); }
   .seg-thumb img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
   .seg-time {
@@ -488,13 +499,15 @@
 (function () {
   "use strict";
 
-  const THUMB_MAX = 512;
-  const BATCH = 6;
+  const THUMB_MAX = 256;
+  const BATCH_CONCURRENCY = 4;
+  const LIVE_THUMB_CAP = 48;
+  const BATCH = BATCH_CONCURRENCY;
   const DB_NAME = "photo-cull-v1";
   const STORE = "choices";
   const SETTINGS_KEY = "photo-cull-settings-v1";
   const HINT_KEY = "photo-cull-hint-dismissed-v1";
-  const ANALYSIS_VERSION = 5;
+  const ANALYSIS_VERSION = 6;
   const SEG_GAP_MS = 3 * 60 * 1000;
 
   let photos = [];
@@ -643,15 +656,71 @@
       img.src = url;
     });
   }
+  let sharedThumbCanvas = null;
+  let sharedThumbCtx = null;
+  let sharedHashCanvas = null;
+  function getSharedThumb() {
+    if (!sharedThumbCanvas) {
+      sharedThumbCanvas = document.createElement("canvas");
+      sharedThumbCtx = sharedThumbCanvas.getContext("2d", { willReadFrequently: true, alpha: false });
+    }
+    return { canvas: sharedThumbCanvas, ctx: sharedThumbCtx };
+  }
+  function getSharedHashCanvas() {
+    if (!sharedHashCanvas) sharedHashCanvas = document.createElement("canvas");
+    return sharedHashCanvas;
+  }
   function drawThumb(img, maxSide) {
-    const scale = Math.min(1, maxSide / Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height));
-    const w = Math.max(1, Math.round((img.naturalWidth || img.width) * scale));
-    const h = Math.max(1, Math.round((img.naturalHeight || img.height) * scale));
-    const canvas = document.createElement("canvas");
-    canvas.width = w; canvas.height = h;
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    ctx.drawImage(img, 0, 0, w, h);
-    return { canvas: canvas, ctx: ctx, w: w, h: h };
+    const sw = img.naturalWidth || img.width;
+    const sh = img.naturalHeight || img.height;
+    const scale = Math.min(1, maxSide / Math.max(sw, sh));
+    const w = Math.max(1, Math.round(sw * scale));
+    const h = Math.max(1, Math.round(sh * scale));
+    const shared = getSharedThumb();
+    shared.canvas.width = w; shared.canvas.height = h;
+    shared.ctx.drawImage(img, 0, 0, w, h);
+    return { canvas: shared.canvas, ctx: shared.ctx, w: w, h: h };
+  }
+  function canvasToJpegBlob(canvas, quality) {
+    return new Promise(function (resolve) {
+      if (canvas.toBlob) {
+        canvas.toBlob(function (b) { resolve(b || null); }, "image/jpeg", quality);
+      } else {
+        const dataUrl = canvas.toDataURL("image/jpeg", quality);
+        const bin = atob(dataUrl.split(",")[1]);
+        const arr = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+        resolve(new Blob([arr], { type: "image/jpeg" }));
+      }
+    });
+  }
+  const liveThumbOrder = [];
+  function revokeThumbUrl(p) {
+    if (!p) return;
+    if (p.thumbUrl && p.thumbUrl.indexOf("blob:") === 0) {
+      try { URL.revokeObjectURL(p.thumbUrl); } catch (_) {}
+    }
+    p.thumbUrl = null;
+    const ix = liveThumbOrder.indexOf(p.id);
+    if (ix >= 0) liveThumbOrder.splice(ix, 1);
+  }
+  function trimLiveThumbs() {
+    while (liveThumbOrder.length > LIVE_THUMB_CAP) {
+      const oldId = liveThumbOrder.shift();
+      const p = photos.find(function (x) { return x.id === oldId; });
+      if (p) revokeThumbUrl(p);
+    }
+  }
+  function ensureThumbUrl(p) {
+    if (!p) return "";
+    if (p.thumbUrl) return p.thumbUrl;
+    if (p.thumbBlob) {
+      p.thumbUrl = URL.createObjectURL(p.thumbBlob);
+      liveThumbOrder.push(p.id);
+      trimLiveThumbs();
+      return p.thumbUrl;
+    }
+    return "";
   }
   function toGray(data) {
     const g = new Float32Array(data.length / 4);
@@ -699,7 +768,7 @@
     return { mean: mean, std: std, overPct: (over / n) * 100, underPct: (under / n) * 100 };
   }
   function dHash(ctx, w, h) {
-    const c = document.createElement("canvas"); c.width = 9; c.height = 8;
+    const c = getSharedHashCanvas(); c.width = 9; c.height = 8;
     const x = c.getContext("2d", { willReadFrequently: true });
     x.drawImage(ctx.canvas, 0, 0, w, h, 0, 0, 9, 8);
     const data = x.getImageData(0, 0, 9, 8).data;
@@ -715,7 +784,7 @@
     return bits;
   }
   function aHash(ctx, w, h) {
-    const c = document.createElement("canvas"); c.width = 8; c.height = 8;
+    const c = getSharedHashCanvas(); c.width = 8; c.height = 8;
     const x = c.getContext("2d", { willReadFrequently: true });
     x.drawImage(ctx.canvas, 0, 0, w, h, 0, 0, 8, 8);
     const data = x.getImageData(0, 0, 8, 8).data;
@@ -829,12 +898,17 @@
   function applyCachedAnalysis(item, saved) {
     if (!saved || !saved.analysis) return false;
     const a = saved.analysis;
-    if (!a || a.v !== ANALYSIS_VERSION || typeof a.sharp !== "number" || !a.hash || !a.thumbUrl) return false;
+    if (!a || a.v !== ANALYSIS_VERSION || typeof a.sharp !== "number" || !a.hash) return false;
+    if (!a.thumbBlob && !a.thumbUrl) return false;
     item.sharp = a.sharp; item.mean = a.mean; item.overPct = a.overPct; item.underPct = a.underPct;
     item.grayStd = typeof a.grayStd === "number" ? a.grayStd : 0;
     item.edgeEnergy = typeof a.edgeEnergy === "number" ? a.edgeEnergy : Math.sqrt(Math.max(0, item.sharp));
     item.flat = !!a.flat || (item.grayStd < 12 && item.edgeEnergy < 18);
-    item.hash = a.hash; item.aHash = a.aHash; item.thumbUrl = a.thumbUrl;
+    item.hash = a.hash; item.aHash = a.aHash;
+    item.thumbBlob = a.thumbBlob || null;
+    item.thumbUrl = null;
+    if (item.thumbBlob) ensureThumbUrl(item);
+    else if (typeof a.thumbUrl === "string") item.thumbUrl = a.thumbUrl;
     item.captureMs = typeof a.captureMs === "number" ? a.captureMs : item.lastModified;
     item.dateSource = a.dateSource === "exif" ? "exif" : "file";
     item.analyzed = true; item.fromCache = true;
@@ -921,21 +995,38 @@
     const cap = await readCaptureDate(item.file);
     item.captureMs = cap.ms;
     item.dateSource = cap.source;
-    const img = await loadImageFromFile(item.file);
-    const thumb = drawThumb(img, THUMB_MAX);
-    img.src = "";
-    const imageData = thumb.ctx.getImageData(0, 0, thumb.w, thumb.h);
-    const metrics = await metricsViaWorker(imageData, thumb.w, thumb.h);
-    item.sharp = metrics.sharp; item.mean = metrics.mean;
-    item.grayStd = typeof metrics.std === "number" ? metrics.std : 0;
-    item.edgeEnergy = typeof metrics.edgeEnergy === "number" ? metrics.edgeEnergy : Math.sqrt(Math.max(0, item.sharp));
-    item.flat = item.grayStd < 12 && item.edgeEnergy < 18;
-    item.overPct = metrics.overPct; item.underPct = metrics.underPct;
-    if (metrics.hash && metrics.aHash) { item.hash = metrics.hash; item.aHash = metrics.aHash; }
-    else { item.hash = dHash(thumb.ctx, thumb.w, thumb.h); item.aHash = aHash(thumb.ctx, thumb.w, thumb.h); }
-    item.thumbUrl = thumb.canvas.toDataURL("image/jpeg", 0.55);
-    item.analyzed = true; item.fromCache = false;
-    thumb.canvas.width = 0; thumb.canvas.height = 0;
+    let bitmap = null;
+    let img = null;
+    try {
+      if (typeof createImageBitmap === "function") {
+        bitmap = await createImageBitmap(item.file);
+        var thumb = drawThumb(bitmap, THUMB_MAX);
+      } else {
+        img = await loadImageFromFile(item.file);
+        thumb = drawThumb(img, THUMB_MAX);
+      }
+      const imageData = thumb.ctx.getImageData(0, 0, thumb.w, thumb.h);
+      const metrics = await metricsViaWorker(imageData, thumb.w, thumb.h);
+      item.sharp = metrics.sharp; item.mean = metrics.mean;
+      item.grayStd = typeof metrics.std === "number" ? metrics.std : 0;
+      item.edgeEnergy = typeof metrics.edgeEnergy === "number" ? metrics.edgeEnergy : Math.sqrt(Math.max(0, item.sharp));
+      item.flat = item.grayStd < 12 && item.edgeEnergy < 18;
+      item.overPct = metrics.overPct; item.underPct = metrics.underPct;
+      if (metrics.hash && metrics.aHash) { item.hash = metrics.hash; item.aHash = metrics.aHash; }
+      else { item.hash = dHash(thumb.ctx, thumb.w, thumb.h); item.aHash = aHash(thumb.ctx, thumb.w, thumb.h); }
+      const blob = await canvasToJpegBlob(thumb.canvas, 0.5);
+      item.thumbBlob = blob;
+      item.thumbUrl = null;
+      if (blob) ensureThumbUrl(item);
+      item.analyzed = true; item.fromCache = false;
+    } finally {
+      if (bitmap) { try { bitmap.close(); } catch (_) {} }
+      if (img) { try { img.src = ""; img.removeAttribute("src"); } catch (_) {} }
+      // keep shared canvas sized small between jobs
+      if (sharedThumbCanvas && sharedThumbCanvas.width > THUMB_MAX) {
+        sharedThumbCanvas.width = 1; sharedThumbCanvas.height = 1;
+      }
+    }
   }
 
   function thresholds() {
@@ -1028,6 +1119,18 @@
     return "你手動刪除";
   }
 
+  /** Near-uniform / very-low-edge solids — never join hash/time similarity groups. */
+  function isMonotoneSolid(p) {
+    if (!p) return false;
+    if (p.flat) return true;
+    const edge = typeof p.edgeEnergy === "number" ? p.edgeEnergy : Math.sqrt(Math.max(0, p.sharp || 0));
+    const std = typeof p.grayStd === "number" ? p.grayStd : 99;
+    if (edge < 18 && std < 28) return true;
+    if (edge < 12) return true;
+    if ((p.sharp || 0) < 25 && std < 28) return true;
+    return false;
+  }
+
   function recomputeGroupsAndLabels() {
     const th = thresholds();
     const analyzed = photos.filter(function (p) { return p.analyzed; });
@@ -1037,9 +1140,12 @@
       const a = analyzed[i];
       if (a.groupId != null) continue;
       a.groupId = gid;
+      // Solids stay singleton groups — do not hash-match anything into them
+      if (isMonotoneSolid(a)) { gid++; continue; }
       for (let j = i + 1; j < analyzed.length; j++) {
         const b = analyzed[j];
         if (b.groupId != null) continue;
+        if (isMonotoneSolid(b)) continue;
         const dist = hashDistance(a, b);
         const timeOk = Math.abs(photoTime(a) - photoTime(b)) <= th.timeTh;
         if (dist <= 4 || (timeOk && dist <= th.hashTh)) b.groupId = gid;
@@ -1077,11 +1183,12 @@
       choice: p.choice, userTouched: !!p.userTouched, ts: Date.now(),
       analysis: prev.analysis || null,
     };
-    if (p.analyzed && p.thumbUrl && p.hash) {
+    if (p.analyzed && p.hash && (p.thumbBlob || p.thumbUrl)) {
       payload.analysis = {
         v: ANALYSIS_VERSION, sharp: p.sharp, mean: p.mean, overPct: p.overPct, underPct: p.underPct,
         grayStd: p.grayStd, edgeEnergy: p.edgeEnergy, flat: !!p.flat,
-        hash: p.hash, aHash: p.aHash, thumbUrl: p.thumbUrl, captureMs: p.captureMs, dateSource: p.dateSource,
+        hash: p.hash, aHash: p.aHash, thumbBlob: p.thumbBlob || null,
+        captureMs: p.captureMs, dateSource: p.dateSource,
       };
     }
     await idbSet(p.id, payload);
@@ -1279,7 +1386,7 @@
         '<article class="' + cls.join(" ") + '" data-id="' + escapeAttr(p.id) + '">' +
           '<div class="thumb-wrap">' +
             '<span class="thumb-placeholder"></span>' +
-            '<img data-src="' + (p.thumbUrl ? escapeAttr(p.thumbUrl) : "") + '" alt="" />' +
+            '<img data-src="' + escapeAttr(ensureThumbUrl(p)) + '" data-pid="' + escapeAttr(p.id) + '" alt="" />' +
             '<span class="choice-badge ' + badgeCls + '">' + badgeText + "</span>" +
           "</div>" +
           '<div class="meta meta-compact">' +
@@ -1293,7 +1400,7 @@
       '<article class="' + cls.join(" ") + '" data-id="' + escapeAttr(p.id) + '">' +
         '<div class="thumb-wrap">' +
           '<span class="thumb-placeholder">載入中…</span>' +
-          '<img data-src="' + (p.thumbUrl ? escapeAttr(p.thumbUrl) : "") + '" alt="" />' +
+          '<img data-src="' + escapeAttr(ensureThumbUrl(p)) + '" data-pid="' + escapeAttr(p.id) + '" alt="" />' +
           '<span class="choice-badge ' + badgeCls + '">' + badgeText + "</span>" +
           (tags.length ? '<div class="tag-row">' + tags.join("") + "</div>" : "") +
         "</div>" +
@@ -1309,11 +1416,24 @@
 
   function setupLazyThumbs(root) {
     if (thumbObserver) thumbObserver.disconnect();
+    root.querySelectorAll("img[data-pid]").forEach(function (img) {
+      const pid = img.getAttribute("data-pid");
+      const pp = photos.find(function (x) { return x.id === pid; });
+      if (!pp) return;
+      const url = ensureThumbUrl(pp);
+      if (url && img.hasAttribute("data-src")) img.setAttribute("data-src", url);
+    });
     const imgs = root.querySelectorAll("img[data-src]");
     if (!("IntersectionObserver" in window)) {
       imgs.forEach(function (img) {
-        if (img.getAttribute("data-src")) {
-          img.src = img.getAttribute("data-src");
+        let src = img.getAttribute("data-src");
+        const pid = img.getAttribute("data-pid");
+        if (pid) {
+          const pp = photos.find(function (x) { return x.id === pid; });
+          if (pp) src = ensureThumbUrl(pp) || src;
+        }
+        if (src) {
+          img.src = src;
           img.removeAttribute("data-src");
           const ph = img.parentElement && img.parentElement.querySelector(".thumb-placeholder");
           if (ph) ph.remove();
@@ -1325,7 +1445,12 @@
       entries.forEach(function (entry) {
         if (!entry.isIntersecting) return;
         const img = entry.target;
-        const src = img.getAttribute("data-src");
+        let src = img.getAttribute("data-src");
+        const pid = img.getAttribute("data-pid");
+        if (pid) {
+          const pp = photos.find(function (x) { return x.id === pid; });
+          if (pp) src = ensureThumbUrl(pp) || src;
+        }
         if (src) {
           img.src = src;
           img.removeAttribute("data-src");
@@ -1404,21 +1529,58 @@
 
   function thumbCellHtml(p, lazy) {
     const hm = formatHmTaipei(photoTime(p));
+    const url = ensureThumbUrl(p);
     let img;
-    if (!p.thumbUrl) img = '<img alt="" />';
-    else if (lazy) img = '<img data-src="' + escapeAttr(p.thumbUrl) + '" alt="' + escapeAttr(p.name) + '" />';
-    else img = '<img src="' + escapeAttr(p.thumbUrl) + '" alt="' + escapeAttr(p.name) + '" loading="lazy" />';
+    if (!url) img = '<img alt="" data-pid="' + escapeAttr(p.id) + '" />';
+    else if (lazy) img = '<img data-src="' + escapeAttr(url) + '" data-pid="' + escapeAttr(p.id) + '" alt="' + escapeAttr(p.name) + '" />';
+    else img = '<img src="' + escapeAttr(url) + '" data-pid="' + escapeAttr(p.id) + '" alt="' + escapeAttr(p.name) + '" loading="lazy" />';
     return '<div class="seg-thumb" title="' + escapeAttr(p.name) + '">' + img +
       '<span class="seg-time">' + escapeHtml(hm) + "</span></div>";
   }
+  function hourDividerHtml(hour) {
+    return '<div class="seg-hour-div" role="separator"><span>' +
+      escapeHtml(pad2(hour) + ":00") + "</span></div>";
+  }
+  /** Build seg-grid HTML. When photos.length > 60, insert hour dividers between thumbs. */
+  function buildSegGridHtml(photos, opts) {
+    opts = opts || {};
+    const open = !!opts.open;
+    const showDiv = photos.length > 60;
+    const limit = open ? photos.length : Math.min(6, photos.length);
+    const parts = [];
+    for (let i = 0; i < limit; i++) {
+      if (showDiv && i > 0) {
+        const prevH = hourTaipei(photoTime(photos[i - 1]));
+        const h = hourTaipei(photoTime(photos[i]));
+        if (h !== prevH) parts.push(hourDividerHtml(h));
+      }
+      const lazy = open && i >= 6;
+      parts.push(thumbCellHtml(photos[i], lazy));
+    }
+    if (!open && photos.length > 6) {
+      parts.push('<button type="button" class="more-thumbs-btn" data-more-seg="' +
+        (opts.segIdx != null ? opts.segIdx : "") + '">還有 ' + (photos.length - 6) + " 張</button>");
+    }
+    return parts.join("");
+  }
   let finishThumbObserver = null;
-  const finishFarUrls = new Set();
   function setupFinishLazyThumbs(root) {
     if (finishThumbObserver) finishThumbObserver.disconnect();
-    const imgs = root.querySelectorAll("img[data-src]");
-    if (!imgs.length) return;
+    const imgs = root.querySelectorAll("img[data-src], img[data-pid]");
+    // Revive blob URLs for any data-src that was revoked
+    root.querySelectorAll("img[data-pid]").forEach(function (img) {
+      const pid = img.getAttribute("data-pid");
+      const p = photos.find(function (x) { return x.id === pid; });
+      if (!p) return;
+      const url = ensureThumbUrl(p);
+      if (!url) return;
+      if (img.hasAttribute("data-src")) img.setAttribute("data-src", url);
+      else if (!img.getAttribute("src")) img.setAttribute("data-src", url);
+    });
+    const lazyImgs = root.querySelectorAll("img[data-src]");
+    if (!lazyImgs.length) return;
     if (!("IntersectionObserver" in window)) {
-      imgs.forEach(function (img) {
+      lazyImgs.forEach(function (img) {
         const src = img.getAttribute("data-src");
         if (src) { img.src = src; img.removeAttribute("data-src"); }
       });
@@ -1428,17 +1590,28 @@
       entries.forEach(function (entry) {
         const img = entry.target;
         if (entry.isIntersecting) {
-          const src = img.getAttribute("data-src");
+          const pid = img.getAttribute("data-pid");
+          const p = pid ? photos.find(function (x) { return x.id === pid; }) : null;
+          let src = img.getAttribute("data-src");
+          if (p) src = ensureThumbUrl(p) || src;
           if (src) {
             img.src = src;
             img.removeAttribute("data-src");
-            finishFarUrls.delete(src);
           }
           finishThumbObserver.unobserve(img);
+        } else if (img.src && img.getAttribute("data-pid")) {
+          // Far from viewport: drop decoded src; keep blob via data-pid for revive
+          const pid = img.getAttribute("data-pid");
+          const p = photos.find(function (x) { return x.id === pid; });
+          if (p && p.thumbBlob) {
+            img.removeAttribute("src");
+            img.setAttribute("data-src", ensureThumbUrl(p) || "");
+            // don't revoke here — cap handles it
+          }
         }
       });
     }, { root: null, rootMargin: "240px 0px", threshold: 0.01 });
-    imgs.forEach(function (img) { finishThumbObserver.observe(img); });
+    lazyImgs.forEach(function (img) { finishThumbObserver.observe(img); });
   }
   function buildAmberAlertHtml(opts) {
     opts = opts || {};
@@ -1493,14 +1666,7 @@
     } else {
       el.delSegments.innerHTML = segs.map(function (seg, idx) {
         const open = !!expandedSegThumbs[idx];
-        const initial = seg.photos.slice(0, 6);
-        const rest = seg.photos.slice(6);
-        let thumbs = initial.map(thumbCellHtml).join("");
-        if (open && rest.length) {
-          thumbs += rest.map(function (p) { return thumbCellHtml(p, true); }).join("");
-        } else if (rest.length) {
-          thumbs += '<button type="button" class="more-thumbs-btn" data-more-seg="' + idx + '">還有 ' + rest.length + " 張</button>";
-        }
+        const thumbs = buildSegGridHtml(seg.photos, { open: open, segIdx: idx });
         const titleDate = escapeHtml(seg.dateLabel) + (seg.partLabel ? " · " + escapeHtml(seg.partLabel) : "");
         return (
           '<section class="del-seg" data-seg="' + idx + '">' +
@@ -1558,6 +1724,9 @@
       alert("沒有可讀取的影像檔");
       return;
     }
+    // Revoke prior blob URLs before dropping photo refs
+    photos.forEach(revokeThumbUrl);
+    liveThumbOrder.length = 0;
     photos = [];
     unreadableFiles = [];
     if (el.onlyBadPanel) { el.onlyBadPanel.classList.add("hidden"); el.onlyBadList.innerHTML = ""; }
@@ -1583,7 +1752,7 @@
         const item = {
           id: id, file: file, name: file.name, size: file.size, lastModified: file.lastModified,
           captureMs: file.lastModified, dateSource: "file",
-          thumbUrl: null, sharp: 0, mean: 0, grayStd: 0, edgeEnergy: 0, flat: false, overPct: 0, underPct: 0, hash: "", aHash: "",
+          thumbUrl: null, thumbBlob: null, sharp: 0, mean: 0, grayStd: 0, edgeEnergy: 0, flat: false, overPct: 0, underPct: 0, hash: "", aHash: "",
           groupId: null, isBest: false, choice: "keep", autoChoice: "keep", userTouched: false,
           reason: "", labels: [], suggestDelete: false, badQuality: false, analyzed: false,
           fromCache: false, groupSize: 1,
@@ -1627,6 +1796,12 @@
     }
     recomputeGroupsAndLabels();
     for (const p of photos) { if (p.analyzed) await persistChoice(p); }
+    // Drop excess live blob URLs; blobs stay in IDB / thumbBlob for on-demand revive
+    while (liveThumbOrder.length > Math.min(LIVE_THUMB_CAP, 24)) {
+      const oldId = liveThumbOrder.shift();
+      const op = photos.find(function (x) { return x.id === oldId; });
+      if (op) revokeThumbUrl(op);
+    }
     el.progressText.textContent = "完成 " + photos.length + " 張（100%）· 新分析 " + analyzedFresh +
       " · 快取 " + skippedCache + " · " + (ms / 1000).toFixed(1) + "s";
     if (unreadableFiles.length) {
@@ -1780,23 +1955,10 @@
       if (!seg) return;
       const grid = el.delSegments.querySelector('[data-seg-grid="' + idx + '"]');
       if (!grid) return;
-      more.remove();
-      const rest = seg.photos.slice(6);
-      const BATCH = 12;
-      let i = 0;
-      function addBatch() {
-        const chunk = rest.slice(i, i + BATCH);
-        const html = chunk.map(function (p) { return thumbCellHtml(p, true); }).join("");
-        grid.insertAdjacentHTML("beforeend", html);
-        setupFinishLazyThumbs(grid);
-        i += BATCH;
-        if (i < rest.length) {
-          requestAnimationFrame(addBatch);
-        } else {
-          expandedSegThumbs[idx] = true;
-        }
-      }
-      addBatch();
+      expandedSegThumbs[idx] = true;
+      // Rebuild full grid so hour dividers insert correctly with lazy thumbs
+      grid.innerHTML = buildSegGridHtml(seg.photos, { open: true, segIdx: idx });
+      setupFinishLazyThumbs(grid);
       return;
     }
 
