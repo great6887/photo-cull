@@ -6,11 +6,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <meta name="apple-mobile-web-app-title" content="照片篩選" />
-<meta name="theme-color" content="#F6F7F9" media="(prefers-color-scheme: light)" />
-<meta name="theme-color" content="#0F1419" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#F6F7F9" />
 <title>照片篩選工具</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232563EB'/%3E%3Ctext x='32' y='42' text-anchor='middle' font-size='28' fill='white'%3E相%3C/text%3E%3C/svg%3E">
-<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22%E7%85%A7%E7%89%87%E7%AF%A9%E9%81%B8%E5%B7%A5%E5%85%B7%22%2C%22short_name%22%3A%22%E7%AF%A9%E9%81%B8%22%2C%22display%22%3A%22standalone%22%2C%22start_url%22%3A%22.%22%2C%22background_color%22%3A%22%23F6F7F9%22%2C%22theme_color%22%3A%22%232563EB%22%7D">
+<link rel="icon" href="icon-180.png" sizes="180x180" />
+<link rel="apple-touch-icon" href="icon-180.png" />
+<link rel="manifest" href="manifest.webmanifest" />
 <style>
   :root {
     --bg: #F6F7F9;
@@ -19,34 +19,17 @@
     --text: #1A1D24;
     --muted: #6B7280;
     --accent: #2563EB;
-    --accent-press: #0A5C5F;
+    --accent-press: #1D4ED8;
     --keep: #16A34A;
     --del: #E5484D;
     --warn: #C4871A;
-    --chip: #F0F1F3;
+    --chip: #EEF0F3;
     --shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 16px rgba(15, 23, 42, 0.06);
-    --footer-bg: rgba(247, 247, 248, 0.92);
-    --reason-bg: #F4F5F7;
+    --footer-bg: rgba(246, 247, 249, 0.94);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-top: env(safe-area-inset-top, 0px);
     --radius: 16px;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #0F1419;
-      --card: #1A222C;
-      --border: rgba(255, 255, 255, 0.08);
-      --text: #F2F4F8;
-      --muted: #9AA3B2;
-      --accent: #2AA8AD;
-      --accent-press: #1F8A8E;
-      --keep: #3DCF8E;
-      --del: #E89999;
-      --warn: #E0B15A;
-      --chip: #243040;
-      --shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 8px 24px rgba(0, 0, 0, 0.35);
-      --footer-bg: rgba(15, 20, 25, 0.94);
-      --reason-bg: #141B24;
-    }
+    --summary-h: 52px;
   }
   * { box-sizing: border-box; }
   html, body {
@@ -58,22 +41,29 @@
     overflow-x: hidden; max-width: 100vw;
   }
   body { padding-bottom: calc(108px + var(--safe-bottom)); }
-  body.screen-home { padding-bottom: calc(32px + var(--safe-bottom)); }
-  body.screen-finish { padding-bottom: calc(32px + var(--safe-bottom)); }
-  .wrap { width: 100%; max-width: 480px; margin: 0 auto; padding: 20px 16px 0; }
+  body.screen-home { padding-bottom: calc(24px + var(--safe-bottom)); }
+  body.screen-finish { padding-bottom: calc(24px + var(--safe-bottom)); }
+  body.screen-result { padding-top: calc(var(--summary-h) + var(--safe-top)); }
+  .wrap { width: 100%; max-width: 480px; margin: 0 auto; padding: 16px 14px 0; }
   h1 {
-    font-size: 22px; margin: 28px 0 8px; font-weight: 700;
+    font-size: 22px; margin: 12px 0 8px; font-weight: 700;
     text-align: center; letter-spacing: -0.02em;
   }
   .sub {
     color: var(--muted); font-size: 15px; line-height: 1.5;
-    margin: 0 auto 36px; text-align: center; max-width: 20em;
+    margin: 0 auto 0; text-align: center; max-width: 20em;
   }
   .notice {
     background: var(--chip); border: 1px solid var(--border); border-radius: 12px;
-    padding: 12px 14px; font-size: 13px; color: var(--muted); margin-bottom: 12px; line-height: 1.5;
+    padding: 12px 14px; font-size: 15px; color: var(--muted); margin-bottom: 12px; line-height: 1.5;
+    position: relative;
   }
   .notice strong { color: var(--warn); font-weight: 600; }
+  .notice .hint-close {
+    position: absolute; top: 6px; right: 6px; width: 44px; height: 44px;
+    border: none; background: transparent; color: var(--muted); font-size: 20px;
+    cursor: pointer; border-radius: 10px;
+  }
   .panel {
     background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
     padding: 14px; margin-bottom: 14px; box-shadow: var(--shadow);
@@ -82,38 +72,46 @@
     display: inline-flex; align-items: center; justify-content: center;
     min-height: 44px; padding: 12px 16px; border-radius: 14px; border: none;
     font-size: 16px; font-weight: 650; cursor: pointer; width: 100%;
-    -webkit-appearance: none; appearance: none; color: inherit;
-    font-family: inherit;
+    -webkit-appearance: none; appearance: none; color: inherit; font-family: inherit;
   }
   .btn-primary { background: var(--accent); color: #fff; }
   .btn-primary:active { background: var(--accent-press); }
-  .btn-keep {
-    background: rgba(31, 169, 113, 0.12); color: var(--keep);
-    border: 1px solid rgba(31, 169, 113, 0.35);
-  }
-  .btn-del {
-    background: rgba(224, 122, 122, 0.12); color: var(--del);
-    border: 1px solid rgba(224, 122, 122, 0.35);
-  }
   .btn-ghost {
     background: var(--chip); color: var(--text); border: 1px solid var(--border); font-weight: 600;
   }
+  .btn-quiet {
+    background: transparent; color: var(--muted); border: 1px solid var(--border); font-weight: 600; font-size: 15px;
+  }
   .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-  .pick-hero { margin: 48px 0 20px; }
+
+  /* Home: thumb-zone pick, tiny 進階 at bottom */
+  #homeScreen {
+    min-height: calc(100dvh - 120px);
+    display: flex; flex-direction: column;
+  }
+  .pick-hero {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    margin: 0; padding: 24px 0 12px;
+  }
   .pick-hero .file-btn {
     min-height: 56px; font-size: 18px; border-radius: 18px;
     position: relative; overflow: hidden; box-shadow: var(--shadow);
+    max-width: 320px; width: 100%;
   }
   .pick-hero .file-btn input {
     position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;
   }
-  .adv-link {
-    display: block; text-align: center; margin: 4px 0 0; padding: 12px;
-    min-height: 44px; background: none; border: none; color: var(--muted);
-    font-size: 15px; text-decoration: underline; text-underline-offset: 3px;
-    cursor: pointer; width: 100%; font-family: inherit;
+  .home-bottom {
+    margin-top: auto; padding: 8px 0 calc(8px + var(--safe-bottom));
+    display: flex; flex-direction: column; align-items: center;
   }
-  .adv-panel { margin-top: 8px; }
+  .adv-link {
+    display: inline-block; text-align: center; margin: 0; padding: 8px 12px;
+    min-height: 36px; background: none; border: none; color: var(--muted);
+    font-size: 14px; text-decoration: underline; text-underline-offset: 3px;
+    cursor: pointer; font-family: inherit;
+  }
+  .adv-panel { margin-top: 8px; width: 100%; }
   .slider-block { margin-top: 12px; }
   .slider-block label {
     display: flex; justify-content: space-between; font-size: 14px; color: var(--muted); margin-bottom: 6px;
@@ -132,50 +130,91 @@
     border-radius: 50%; background: var(--muted);
   }
   .badge-soon {
-    font-size: 11px; background: var(--chip); color: var(--muted);
-    padding: 2px 8px; border-radius: 999px; margin-left: 6px;
-    border: 1px solid var(--border);
+    font-size: 12px; background: var(--chip); color: var(--muted);
+    padding: 2px 8px; border-radius: 999px; margin-left: 6px; border: 1px solid var(--border);
   }
-  .progress-wrap { margin-top: 16px; }
-  .progress {
-    height: 8px; background: var(--chip); border-radius: 999px; overflow: hidden;
-  }
+  .progress-wrap { margin-top: 12px; width: 100%; }
+  .progress { height: 8px; background: var(--chip); border-radius: 999px; overflow: hidden; }
   .progress > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .12s; }
-  .status { font-size: 13px; color: var(--muted); margin-top: 8px; }
+  .status { font-size: 14px; color: var(--muted); margin-top: 8px; }
   .progress-row { display: flex; gap: 8px; margin-top: 12px; }
   .progress-row .btn { flex: 1; min-height: 44px; }
-  .section-title {
-    font-size: 20px; font-weight: 700; margin: 8px 0 12px; letter-spacing: -0.02em;
+
+  .section-title { font-size: 20px; font-weight: 700; margin: 8px 0 12px; letter-spacing: -0.02em; }
+  .del-headline {
+    font-size: 26px; font-weight: 800; margin: 4px 0 8px; letter-spacing: -0.03em; color: var(--del);
   }
-  .top-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
-  .top-actions .btn { flex: 1 1 140px; min-width: 0; min-height: 44px; font-size: 15px; }
-  .summary-counts { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
-  .summary-counts span {
-    flex: 1 1 90px; min-width: 0; text-align: center;
-    background: var(--chip); border: 1px solid var(--border); border-radius: 12px;
-    padding: 10px 8px; font-size: 13px; color: var(--muted);
+
+  /* Sticky summary bar */
+  .summary-bar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 35;
+    height: calc(var(--summary-h) + var(--safe-top));
+    padding: var(--safe-top) 10px 0;
+    background: rgba(246, 247, 249, 0.94);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    display: none;
   }
-  .summary-counts strong { display: block; font-size: 20px; color: var(--text); margin-bottom: 2px; }
-  .summary-counts .c-keep strong { color: var(--keep); }
-  .summary-counts .c-del strong { color: var(--del); }
+  body.screen-result .summary-bar { display: block; }
+  .summary-bar-inner {
+    max-width: 480px; margin: 0 auto; height: var(--summary-h);
+    display: flex; align-items: center; gap: 8px; padding: 0 4px;
+  }
+  #summaryCounts {
+    flex: 1; min-width: 0; font-size: 15px; color: var(--muted);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  #summaryCounts strong { font-size: 17px; font-weight: 800; }
+  #summaryCounts .c-keep strong { color: var(--keep); }
+  #summaryCounts .c-del strong { color: var(--del); }
+  #summaryCounts .c-total strong { color: var(--text); }
+  .btn-more {
+    flex-shrink: 0; width: 44px; height: 44px; border-radius: 12px;
+    border: 1px solid var(--border); background: var(--card); color: var(--text);
+    font-size: 22px; font-weight: 700; line-height: 1; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .more-menu {
+    position: absolute; top: calc(var(--summary-h) + var(--safe-top) - 4px); right: max(10px, calc(50% - 240px + 10px));
+    min-width: 160px; background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; box-shadow: var(--shadow); padding: 6px; z-index: 36;
+  }
+  .more-menu button {
+    display: block; width: 100%; text-align: left; min-height: 44px;
+    padding: 10px 12px; border: none; background: transparent; border-radius: 10px;
+    font-size: 15px; font-weight: 600; color: var(--text); cursor: pointer; font-family: inherit;
+  }
+  .more-menu button:active { background: var(--chip); }
+
+  .result-hint { margin: 10px 0 12px; padding-right: 44px; }
+  #resultAdvPanel { margin-bottom: 10px; }
+
   .cards { display: flex; flex-direction: column; gap: 14px; }
   .group-block { display: flex; flex-direction: column; gap: 0; }
   .card {
     background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
     overflow: hidden; width: 100%; max-width: 100%; box-shadow: var(--shadow);
   }
-  .card.keep { border-color: rgba(31, 169, 113, 0.35); }
-  .card.delete { border-color: rgba(224, 122, 122, 0.35); }
+  .card.keep { border-color: rgba(22, 163, 74, 0.35); }
+  .card.delete { border-color: rgba(229, 72, 77, 0.35); }
   .thumb-wrap {
-    position: relative; width: 100%; min-width: 50%; background: var(--chip);
+    position: relative; width: 100%; background: var(--chip);
     aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center; overflow: hidden;
   }
-  .thumb-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .thumb-placeholder { color: var(--muted); font-size: 13px; position: absolute; }
+  .thumb-wrap img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+    position: absolute; inset: 0;
+  }
+  .thumb-placeholder {
+    color: var(--muted); font-size: 14px; position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(90deg, var(--chip), #e4e6ea, var(--chip));
+    background-size: 200% 100%;
+  }
   .choice-badge {
     position: absolute; top: 10px; right: 10px; z-index: 2;
-    font-size: 12px; font-weight: 700; line-height: 1;
-    min-height: 28px; min-width: 40px; padding: 6px 10px;
+    font-size: 12px; font-weight: 800; line-height: 1;
+    min-height: 32px; min-width: 44px; padding: 8px 12px;
     border-radius: 999px; display: inline-flex; align-items: center; justify-content: center;
     box-shadow: 0 2px 8px rgba(0,0,0,0.18); pointer-events: none;
   }
@@ -183,34 +222,61 @@
   .choice-badge.delete { background: var(--del); color: #fff; }
   .tag-row {
     position: absolute; left: 10px; top: 10px; right: 56px;
-    display: flex; flex-wrap: wrap; gap: 6px; pointer-events: none;
+    display: flex; flex-wrap: wrap; gap: 6px; pointer-events: none; z-index: 2;
   }
   .tag {
-    font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 999px;
+    font-size: 12px; font-weight: 800; padding: 6px 10px; border-radius: 999px;
     background: rgba(0,0,0,0.55); color: #fff;
   }
-  .tag.best { background: rgba(31, 169, 113, 0.92); }
-  .tag.manual { background: rgba(13, 115, 119, 0.92); }
+  .tag.best { background: rgba(22, 163, 74, 0.92); }
+  .tag.manual { background: rgba(37, 99, 235, 0.92); }
   .meta { padding: 12px 14px 14px; }
-  .fname {
-    font-size: 15px; word-break: break-all; color: var(--text);
-    margin-bottom: 6px; font-weight: 600;
+  .fname { font-size: 15px; word-break: break-all; color: var(--text); margin-bottom: 6px; font-weight: 600; }
+  .reason { font-size: 15px; line-height: 1.45; color: var(--muted); margin-bottom: 8px; }
+  .scores { font-size: 14px; color: var(--muted); line-height: 1.4; margin-bottom: 10px; }
+  .card-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .seg-switch {
+    display: inline-flex; height: 44px; border-radius: 12px; overflow: hidden;
+    border: 1px solid var(--border); background: var(--chip); flex: 1; min-width: 160px; max-width: 260px;
   }
-  .reason {
-    font-size: 13px; line-height: 1.45; color: var(--muted); margin-bottom: 8px;
-    padding: 0; background: transparent; border: none;
+  .seg-opt {
+    flex: 1; border: none; background: transparent; font-size: 15px; font-weight: 700;
+    cursor: pointer; font-family: inherit; color: var(--muted); min-height: 44px;
   }
-  .scores { font-size: 12px; color: var(--muted); line-height: 1.4; margin-bottom: 10px; }
-  .actions { display: flex; flex-wrap: wrap; gap: 8px; }
-  .actions .btn { flex: 1 1 90px; min-width: 0; min-height: 44px; font-size: 15px; }
+  .seg-opt.keep.on { background: var(--keep); color: #fff; }
+  .seg-opt.del.on { background: var(--del); color: #fff; }
+  .restore-link {
+    border: none; background: none; color: var(--accent); font-size: 14px;
+    font-weight: 600; text-decoration: underline; text-underline-offset: 3px;
+    cursor: pointer; padding: 8px 4px; min-height: 44px; font-family: inherit;
+  }
+
   .expand-btn {
-    width: 100%; margin-top: 8px; min-height: 44px; border-radius: 12px;
-    border: 1px solid var(--border); background: var(--card); color: var(--muted);
-    font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
-    box-shadow: none; padding: 10px 12px;
+    width: 100%; margin-top: 8px; min-height: 48px; border-radius: 12px;
+    border: 1px solid var(--border); background: var(--card); color: var(--text);
+    font-size: 15px; font-weight: 650; cursor: pointer; font-family: inherit;
+    padding: 10px 14px; display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; box-shadow: var(--shadow);
   }
-  .group-extras { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+  .expand-btn .chevron {
+    width: 10px; height: 10px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted);
+    transform: rotate(45deg); transition: transform .15s; flex-shrink: 0; margin-right: 4px;
+  }
+  .expand-btn.open .chevron { transform: rotate(-135deg); margin-top: 6px; }
+  .group-extras {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    margin-top: 8px;
+  }
   .group-extras.hidden { display: none !important; }
+  .card-compact { box-shadow: none; }
+  .card-compact .thumb-wrap { aspect-ratio: 1 / 1; border-radius: 0; }
+  .card-compact .meta-compact { padding: 8px; }
+  .card-compact .reason { font-size: 14px; margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .card-compact .seg-switch { max-width: none; width: 100%; height: 36px; min-width: 0; }
+  .card-compact .seg-opt { min-height: 36px; font-size: 14px; }
+  .card-compact .restore-link { min-height: 36px; font-size: 14px; padding: 4px 0; }
+  .card-compact .choice-badge { min-height: 28px; min-width: 36px; font-size: 12px; font-weight: 800; padding: 6px 8px; top: 6px; right: 6px; }
+
   .footer {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
     background: var(--footer-bg); border-top: 1px solid var(--border);
@@ -228,7 +294,7 @@
   .finish-list { list-style: none; padding: 0; margin: 0; }
   .finish-list li {
     padding: 10px 0; border-bottom: 1px solid var(--border);
-    font-size: 14px; word-break: break-all;
+    font-size: 15px; word-break: break-all;
   }
   .hidden { display: none !important; }
   .del-segments { display: flex; flex-direction: column; gap: 14px; }
@@ -240,78 +306,97 @@
     display: flex; align-items: flex-start; justify-content: space-between;
     gap: 10px; margin-bottom: 10px;
   }
-  .del-seg-title {
-    font-size: 15px; font-weight: 700; word-break: break-word; line-height: 1.35; flex: 1; min-width: 0;
-  }
+  .del-seg-title { flex: 1; min-width: 0; }
+  .del-seg-date { font-size: 16px; font-weight: 700; word-break: break-word; line-height: 1.3; }
+  .del-seg-time { font-size: 14px; color: var(--muted); margin-top: 2px; font-weight: 500; }
   .count-chip {
-    flex-shrink: 0; font-size: 12px; font-weight: 700; color: var(--accent);
-    background: rgba(13, 115, 119, 0.12); border: 1px solid rgba(13, 115, 119, 0.22);
+    flex-shrink: 0; font-size: 14px; font-weight: 700; color: var(--accent);
+    background: rgba(37, 99, 235, 0.1); border: 1px solid rgba(37, 99, 235, 0.22);
     padding: 6px 10px; border-radius: 999px; min-height: 28px;
     display: inline-flex; align-items: center;
   }
-  @media (prefers-color-scheme: dark) {
-    .count-chip {
-      background: rgba(42, 168, 173, 0.16); border-color: rgba(42, 168, 173, 0.3);
-    }
-  }
-  .del-seg-meta { font-size: 12px; color: var(--muted); margin: 0 0 10px; }
   .seg-grid {
     display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
     width: 100%; max-width: 100%;
   }
-  .seg-grid img {
-    width: 100%; aspect-ratio: 1; object-fit: cover;
-    border-radius: 8px; background: var(--chip); display: block;
+  .seg-thumb { position: relative; width: 100%; border-radius: 8px; overflow: hidden; background: var(--chip); }
+  .seg-thumb img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+  .seg-time {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    font-size: 12px; font-weight: 700; color: #fff; text-align: center;
+    padding: 4px 2px; background: linear-gradient(to top, rgba(0,0,0,0.65), transparent);
   }
   .seg-copy { margin-top: 12px; min-height: 44px; font-size: 15px; }
+  .keep-toggle {
+    width: 100%; display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; min-height: 48px; padding: 10px 4px; border: none; background: transparent;
+    font-size: 18px; font-weight: 700; color: var(--text); cursor: pointer; font-family: inherit;
+  }
+  .keep-toggle .chevron {
+    width: 10px; height: 10px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted);
+    transform: rotate(45deg); transition: transform .15s;
+  }
+  .keep-toggle.open .chevron { transform: rotate(-135deg); margin-top: 6px; }
   .toast {
     position: fixed; left: 50%; bottom: calc(96px + var(--safe-bottom));
-    transform: translateX(-50%); background: var(--text); color: var(--bg);
+    transform: translateX(-50%); background: var(--text); color: #fff;
     padding: 10px 16px; border-radius: 999px; font-size: 14px; z-index: 50;
     max-width: calc(100vw - 24px); text-align: center; pointer-events: none;
+  }
+
+  .date-warn {
+    display: flex; align-items: center; gap: 8px;
+    background: #FFF7E8; border: 1px solid rgba(196, 135, 26, 0.35);
+    color: #8A5A00; border-radius: 12px; padding: 12px 14px;
+    font-size: 15px; font-weight: 700; margin: 0 0 12px; line-height: 1.4;
+  }
+  .date-warn.hidden { display: none !important; }
+  .unread-box {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 12px 14px; margin: 0 0 14px; box-shadow: var(--shadow);
+  }
+  .unread-box.hidden { display: none !important; }
+  .unread-toggle {
+    width: 100%; display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; min-height: 44px; border: none; background: transparent;
+    font-size: 15px; font-weight: 700; color: var(--warn); cursor: pointer; font-family: inherit;
+    padding: 0;
+  }
+  .unread-list { list-style: none; padding: 8px 0 0; margin: 0; }
+  .unread-list li {
+    font-size: 14px; color: var(--muted); padding: 8px 0;
+    border-top: 1px solid var(--border); word-break: break-all;
+  }
+  .more-thumbs-btn {
+    grid-column: 1 / -1; width: 100%; min-height: 44px; margin-top: 2px;
+    border-radius: 10px; border: 1px dashed var(--border); background: var(--chip);
+    color: var(--text); font-size: 14px; font-weight: 650; cursor: pointer; font-family: inherit;
   }
 </style>
 </head>
 <body class="screen-home">
+<div class="summary-bar" id="summaryBar">
+  <div class="summary-bar-inner">
+    <div id="summaryCounts"></div>
+    <button type="button" class="btn-more" id="btnMore" aria-label="更多" aria-expanded="false" aria-haspopup="true">⋯</button>
+  </div>
+  <div class="more-menu hidden" id="moreMenu" role="menu">
+    <button type="button" id="btnRestoreAll" role="menuitem">全部還原</button>
+    <button type="button" id="btnResultAdv" role="menuitem">進階</button>
+    <button type="button" id="btnReselect" role="menuitem">重選照片</button>
+  </div>
+</div>
+
 <div class="wrap" id="app">
-  <h1>照片篩選工具</h1>
+  <h1 id="homeTitle">照片篩選工具</h1>
   <p class="sub" id="homeSub">照片只在這台手機處理，不會上傳。選完後自動挑出每組最佳張。</p>
 
-  <!-- A: first screen -->
   <div id="homeScreen">
     <div class="pick-hero">
       <label class="file-btn btn-primary">
         選照片
         <input id="fileInput" type="file" accept="image/*" multiple />
       </label>
-    </div>
-    <button type="button" class="adv-link" id="btnAdvToggle">進階</button>
-    <div id="advPanel" class="adv-panel panel hidden">
-      <div class="slider-block">
-        <label><span>清晰度門檻</span><span id="sharpLabel">80</span></label>
-        <input type="range" id="sharpSlider" min="10" max="400" step="5" value="80" />
-      </div>
-      <div class="slider-block">
-        <label><span>過曝比例門檻</span><span id="overLabel">8%</span></label>
-        <input type="range" id="overSlider" min="1" max="30" step="1" value="8" />
-      </div>
-      <div class="slider-block">
-        <label><span>欠曝比例門檻</span><span id="underLabel">12%</span></label>
-        <input type="range" id="underSlider" min="1" max="40" step="1" value="12" />
-      </div>
-      <div class="slider-block">
-        <label><span>重複相似度</span><span id="hashLabel">14</span></label>
-        <input type="range" id="hashSlider" min="0" max="24" step="1" value="14" />
-      </div>
-      <div class="slider-block">
-        <label><span>時間相近（秒）</span><span id="timeLabel">12</span></label>
-        <input type="range" id="timeSlider" min="0" max="60" step="1" value="12" />
-      </div>
-      <div class="toggle-row">
-        <span>AI 評分 <span class="badge-soon">即將推出</span></span>
-        <button type="button" class="toggle" id="aiToggle" aria-pressed="false" title="即將推出"></button>
-      </div>
-      <p class="status">調整閾值只重算尚未手動改過的照片。</p>
     </div>
     <div id="progressBlock" class="progress-wrap panel hidden">
       <div class="progress"><i id="progressBar"></i></div>
@@ -320,40 +405,78 @@
         <button type="button" class="btn btn-ghost" id="btnPause">暫停</button>
       </div>
     </div>
+    <div class="home-bottom">
+      <button type="button" class="adv-link" id="btnAdvToggle">進階</button>
+      <div id="advPanel" class="adv-panel panel hidden">
+        <div class="slider-block">
+          <label><span>清晰度門檻</span><span id="sharpLabel">80</span></label>
+          <input type="range" id="sharpSlider" min="10" max="400" step="5" value="80" />
+        </div>
+        <div class="slider-block">
+          <label><span>過曝比例門檻</span><span id="overLabel">8%</span></label>
+          <input type="range" id="overSlider" min="1" max="30" step="1" value="8" />
+        </div>
+        <div class="slider-block">
+          <label><span>欠曝比例門檻</span><span id="underLabel">12%</span></label>
+          <input type="range" id="underSlider" min="1" max="40" step="1" value="12" />
+        </div>
+        <div class="slider-block">
+          <label><span>重複相似度</span><span id="hashLabel">14</span></label>
+          <input type="range" id="hashSlider" min="0" max="24" step="1" value="14" />
+        </div>
+        <div class="slider-block">
+          <label><span>時間相近（秒）</span><span id="timeLabel">12</span></label>
+          <input type="range" id="timeSlider" min="0" max="60" step="1" value="12" />
+        </div>
+        <div class="toggle-row">
+          <span>AI 評分 <span class="badge-soon">即將推出</span></span>
+          <button type="button" class="toggle" id="aiToggle" aria-pressed="false" title="即將推出"></button>
+        </div>
+        <p class="status">調整閾值只重算尚未手動改過的照片。</p>
+      </div>
+    </div>
   </div>
 
-  <!-- B: result = 建議留下 -->
   <div id="resultScreen" class="hidden">
-    <h2 class="section-title">建議留下</h2>
-    <div class="panel">
-      <div class="summary-counts" id="summaryCounts"></div>
-      <div class="top-actions">
-        <button type="button" class="btn btn-ghost" id="btnRestoreAll">全部還原</button>
-        <button type="button" class="btn btn-ghost" id="btnResultAdv">進階</button>
-        <button type="button" class="btn btn-ghost" id="btnReselect">重選照片</button>
-      </div>
-      <div id="resultAdvPanel" class="hidden">
-        <p class="status">閾值與上方「進階」相同，改完會重算未手動調整的項目。</p>
-      </div>
-      <p class="notice" style="margin:0"><strong>提示：</strong>每組只顯示建議留下的那張；可展開同組其他照片微調。網頁無法刪除「照片」App 原檔。</p>
+    <div class="unread-box hidden" id="unreadBoxResult">
+      <button type="button" class="unread-toggle" id="btnUnreadToggleResult" aria-expanded="false">
+        <span id="unreadSummaryResult">有 0 張無法讀取</span>
+        <span class="chevron" aria-hidden="true"></span>
+      </button>
+      <ul class="unread-list hidden" id="unreadListResult"></ul>
     </div>
+    <div class="notice result-hint" id="resultHint">
+      <strong>提示：</strong>每組只顯示建議留下的那張；可展開同組其他照片微調。網頁無法刪除「照片」App 原檔。
+      <button type="button" class="hint-close" id="btnHintClose" aria-label="關閉提示">×</button>
+    </div>
+    <div id="resultAdvPanel" class="hidden"></div>
     <div id="cards" class="cards"></div>
   </div>
 
-  <!-- G: finish -->
   <div id="finishPanel" class="hidden">
-    <h2 class="section-title">完成：已選留</h2>
-    <div class="panel">
-      <p class="status" id="keepCount">0 張</p>
-      <ul class="finish-list" id="keepList"></ul>
-      <button type="button" class="btn btn-primary" id="btnShare" style="margin-top:10px">分享／存回已選留照片</button>
-      <p class="status" style="margin-top:8px">若裝置支援，會開啟系統分享表，可選「儲存影像」。</p>
+    <h2 class="del-headline" id="delHeadline">要刪 0 張</h2>
+    <div class="date-warn hidden" id="dateWarn" role="status">日期可能不準</div>
+    <div class="unread-box hidden" id="unreadBox">
+      <button type="button" class="unread-toggle" id="btnUnreadToggle" aria-expanded="false">
+        <span id="unreadSummary">有 0 張無法讀取</span>
+        <span class="chevron" aria-hidden="true"></span>
+      </button>
+      <ul class="unread-list hidden" id="unreadList"></ul>
     </div>
-    <h2 class="section-title">建議刪除（依拍攝時段分段）</h2>
-    <div class="panel">
-      <p class="notice" style="margin:0 0 8px"><strong>請到「照片」App 手動刪除以下原檔。</strong>此網頁無法代你刪除。縮圖由舊到新、左到右，較新在較下方。</p>
-      <p class="status" id="delCount">0 張</p>
-      <div class="del-segments" id="delSegments"></div>
+    <p class="notice" style="margin:0 0 12px"><strong>請到「照片」App 手動刪除以下原檔。</strong>此網頁無法代你刪除。縮圖上的時間可對照 Photos。縮圖由舊到新。</p>
+    <p class="status" id="delCount" style="margin-bottom:10px">0 張</p>
+    <div class="del-segments" id="delSegments"></div>
+
+    <div class="panel" id="keepSection" style="margin-top:18px">
+      <button type="button" class="keep-toggle" id="btnKeepToggle" aria-expanded="false">
+        <span>已選留 · <span id="keepCount">0 張</span></span>
+        <span class="chevron" aria-hidden="true"></span>
+      </button>
+      <div id="keepBody" class="hidden">
+        <ul class="finish-list" id="keepList"></ul>
+        <button type="button" class="btn btn-quiet" id="btnShare" style="margin-top:10px">分享／存回已選留照片</button>
+        <p class="status" style="margin-top:8px">若裝置支援，會開啟系統分享表，可選「儲存影像」。</p>
+      </div>
     </div>
     <button type="button" class="btn btn-ghost" id="btnBackToCards" style="margin-bottom:24px">返回繼續調整</button>
   </div>
@@ -375,7 +498,8 @@
   const DB_NAME = "photo-cull-v1";
   const STORE = "choices";
   const SETTINGS_KEY = "photo-cull-settings-v1";
-  const ANALYSIS_VERSION = 2;
+  const HINT_KEY = "photo-cull-hint-dismissed-v1";
+  const ANALYSIS_VERSION = 4;
   const SEG_GAP_MS = 3 * 60 * 1000;
 
   let photos = [];
@@ -386,6 +510,8 @@
   let expandedGroups = {};
   let lastRunStats = { total: 0, analyzedFresh: 0, skippedCache: 0, ms: 0 };
   let thumbObserver = null;
+  let unreadableFiles = [];
+  let expandedSegThumbs = {};
 
   const el = {
     homeScreen: document.getElementById("homeScreen"),
@@ -399,17 +525,35 @@
     progressText: document.getElementById("progressText"),
     btnPause: document.getElementById("btnPause"),
     cards: document.getElementById("cards"),
+    summaryBar: document.getElementById("summaryBar"),
     summaryCounts: document.getElementById("summaryCounts"),
+    btnMore: document.getElementById("btnMore"),
+    moreMenu: document.getElementById("moreMenu"),
     btnRestoreAll: document.getElementById("btnRestoreAll"),
     btnResultAdv: document.getElementById("btnResultAdv"),
     resultAdvPanel: document.getElementById("resultAdvPanel"),
     btnReselect: document.getElementById("btnReselect"),
+    resultHint: document.getElementById("resultHint"),
+    btnHintClose: document.getElementById("btnHintClose"),
     mainFooter: document.getElementById("mainFooter"),
     btnConfirm: document.getElementById("btnConfirm"),
     keepList: document.getElementById("keepList"),
     keepCount: document.getElementById("keepCount"),
+    keepSection: document.getElementById("keepSection"),
+    btnKeepToggle: document.getElementById("btnKeepToggle"),
+    keepBody: document.getElementById("keepBody"),
+    delHeadline: document.getElementById("delHeadline"),
     delCount: document.getElementById("delCount"),
     delSegments: document.getElementById("delSegments"),
+    dateWarn: document.getElementById("dateWarn"),
+    unreadBox: document.getElementById("unreadBox"),
+    unreadSummary: document.getElementById("unreadSummary"),
+    unreadList: document.getElementById("unreadList"),
+    btnUnreadToggle: document.getElementById("btnUnreadToggle"),
+    unreadBoxResult: document.getElementById("unreadBoxResult"),
+    unreadSummaryResult: document.getElementById("unreadSummaryResult"),
+    unreadListResult: document.getElementById("unreadListResult"),
+    btnUnreadToggleResult: document.getElementById("btnUnreadToggleResult"),
     btnShare: document.getElementById("btnShare"),
     btnBackToCards: document.getElementById("btnBackToCards"),
     toast: document.getElementById("toast"),
@@ -424,6 +568,8 @@
     hashLabel: document.getElementById("hashLabel"),
     timeLabel: document.getElementById("timeLabel"),
     aiToggle: document.getElementById("aiToggle"),
+    homeTitle: document.getElementById("homeTitle"),
+    homeSub: document.getElementById("homeSub"),
   };
 
   function syncLabels() {
@@ -551,14 +697,16 @@
     return sumSq / n - mean * mean;
   }
   function exposureStats(gray) {
-    let sum = 0, over = 0, under = 0;
+    let sum = 0, sumSq = 0, over = 0, under = 0;
     for (let i = 0; i < gray.length; i++) {
-      const v = gray[i]; sum += v;
+      const v = gray[i]; sum += v; sumSq += v * v;
       if (v >= 240) over++;
       if (v <= 18) under++;
     }
-    const n = gray.length;
-    return { mean: sum / n, overPct: (over / n) * 100, underPct: (under / n) * 100 };
+    const n = gray.length || 1;
+    const mean = sum / n;
+    const std = Math.sqrt(Math.max(0, sumSq / n - mean * mean));
+    return { mean: mean, std: std, overPct: (over / n) * 100, underPct: (under / n) * 100 };
   }
   function dHash(ctx, w, h) {
     const c = document.createElement("canvas"); c.width = 9; c.height = 8;
@@ -624,9 +772,10 @@
       if(!n) return 0; const mean=sum/n; return sumSq/n-mean*mean;
     }
     function exposureStats(gray) {
-      let sum=0,over=0,under=0;
-      for (let i=0;i<gray.length;i++){ const v=gray[i]; sum+=v; if(v>=240)over++; if(v<=18)under++; }
-      const n=gray.length; return {mean:sum/n, overPct:(over/n)*100, underPct:(under/n)*100};
+      let sum=0,sumSq=0,over=0,under=0;
+      for (let i=0;i<gray.length;i++){ const v=gray[i]; sum+=v; sumSq+=v*v; if(v>=240)over++; if(v<=18)under++; }
+      const n=gray.length||1; const mean=sum/n; const std=Math.sqrt(Math.max(0,sumSq/n-mean*mean));
+      return {mean:mean, std:std, overPct:(over/n)*100, underPct:(under/n)*100};
     }
     function dHashFromGray(gray,w,h){
       const bits=[];
@@ -651,7 +800,7 @@
     self.onmessage=function(e){
       const msg=e.data; const data=new Uint8ClampedArray(msg.buffer); const gray=toGray(data);
       const sharp=laplacianVariance(gray,msg.w,msg.h); const exp=exposureStats(gray);
-      self.postMessage({id:msg.id,sharp:sharp,mean:exp.mean,overPct:exp.overPct,underPct:exp.underPct,
+      self.postMessage({id:msg.id,sharp:sharp,mean:exp.mean,std:exp.std,overPct:exp.overPct,underPct:exp.underPct,
         hash:dHashFromGray(gray,msg.w,msg.h), aHash:aHashFromGray(gray,msg.w,msg.h)});
     };
   `;
@@ -686,20 +835,107 @@
   }
 
   function applyCachedAnalysis(item, saved) {
-    const a = saved && saved.analysis;
+    if (!saved || !saved.analysis) return false;
+    const a = saved.analysis;
     if (!a || a.v !== ANALYSIS_VERSION || typeof a.sharp !== "number" || !a.hash || !a.thumbUrl) return false;
     item.sharp = a.sharp; item.mean = a.mean; item.overPct = a.overPct; item.underPct = a.underPct;
+    item.grayStd = typeof a.grayStd === "number" ? a.grayStd : 0;
+    item.flat = !!a.flat || item.grayStd < 12;
     item.hash = a.hash; item.aHash = a.aHash; item.thumbUrl = a.thumbUrl;
+    item.captureMs = typeof a.captureMs === "number" ? a.captureMs : item.lastModified;
+    item.dateSource = a.dateSource === "exif" ? "exif" : "file";
     item.analyzed = true; item.fromCache = true;
     return true;
   }
+
+  /** Minimal JPEG EXIF DateTimeOriginal / DateTime parser. Returns ms or null. */
+  function parseExifDateMs(buf) {
+    try {
+      const u8 = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+      if (u8.length < 12 || u8[0] !== 0xFF || u8[1] !== 0xD8) return null;
+      let off = 2;
+      while (off + 4 < u8.length) {
+        if (u8[off] !== 0xFF) break;
+        const marker = u8[off + 1];
+        const len = (u8[off + 2] << 8) | u8[off + 3];
+        if (marker === 0xE1 && len > 8) {
+          const start = off + 4;
+          const head = String.fromCharCode(u8[start], u8[start+1], u8[start+2], u8[start+3], u8[start+4], u8[start+5]);
+          if (head.indexOf("Exif") !== 0) { off += 2 + len; continue; }
+          const tiff = start + 6;
+          const le = u8[tiff] === 0x49 && u8[tiff+1] === 0x49;
+          const rd16 = function (i) { return le ? u8[i] | (u8[i+1] << 8) : (u8[i] << 8) | u8[i+1]; };
+          const rd32 = function (i) {
+            return le ? u8[i] | (u8[i+1] << 8) | (u8[i+2] << 16) | (u8[i+3] << 24)
+              : (u8[i] << 24) | (u8[i+1] << 16) | (u8[i+2] << 8) | u8[i+3];
+          };
+          const ifd0 = tiff + rd32(tiff + 4);
+          function readIFD(ifd) {
+            if (ifd < 0 || ifd + 2 >= u8.length) return null;
+            const n = rd16(ifd);
+            let dateStr = null;
+            let exifOff = null;
+            for (let i = 0; i < n; i++) {
+              const e = ifd + 2 + i * 12;
+              if (e + 12 > u8.length) break;
+              const tag = rd16(e);
+              const typ = rd16(e + 2);
+              const cnt = rd32(e + 4);
+              const valOff = e + 8;
+              const size = (typ === 2 ? 1 : typ === 3 ? 2 : 4) * cnt;
+              const dataAt = size <= 4 ? valOff : tiff + rd32(valOff);
+              if (tag === 0x8769) exifOff = tiff + rd32(valOff);
+              if (tag === 0x9003 || tag === 0x0132) {
+                let s = "";
+                for (let k = 0; k < Math.min(cnt - 1, 19); k++) s += String.fromCharCode(u8[dataAt + k]);
+                if (/^\d{4}:\d{2}:\d{2} \d{2}:\d{2}:\d{2}$/.test(s)) dateStr = s;
+              }
+            }
+            return { dateStr: dateStr, exifOff: exifOff };
+          }
+          const ifd0res = readIFD(ifd0);
+          let dateStr = ifd0res && ifd0res.dateStr;
+          if (!dateStr && ifd0res && ifd0res.exifOff) {
+            const sub = readIFD(ifd0res.exifOff);
+            if (sub && sub.dateStr) dateStr = sub.dateStr;
+          }
+          if (dateStr) {
+            const parts = dateStr.split(/[: ]/);
+            const iso = parts[0] + "-" + parts[1] + "-" + parts[2] + "T" + parts[3] + ":" + parts[4] + ":" + parts[5];
+            // Interpret as local Taipei wall time roughly via Date parse with +08:00
+            const ms = Date.parse(iso + "+08:00");
+            if (!isNaN(ms)) return ms;
+          }
+          return null;
+        }
+        if (marker === 0xDA) break;
+        off += 2 + len;
+      }
+    } catch (_) {}
+    return null;
+  }
+  async function readCaptureDate(file) {
+    try {
+      const slice = file.slice(0, Math.min(file.size, 128 * 1024));
+      const buf = await slice.arrayBuffer();
+      const ms = parseExifDateMs(buf);
+      if (ms != null) return { ms: ms, source: "exif" };
+    } catch (_) {}
+    return { ms: file.lastModified, source: "file" };
+  }
+
   async function analyzeOne(item) {
+    const cap = await readCaptureDate(item.file);
+    item.captureMs = cap.ms;
+    item.dateSource = cap.source;
     const img = await loadImageFromFile(item.file);
     const thumb = drawThumb(img, THUMB_MAX);
     img.src = "";
     const imageData = thumb.ctx.getImageData(0, 0, thumb.w, thumb.h);
     const metrics = await metricsViaWorker(imageData, thumb.w, thumb.h);
     item.sharp = metrics.sharp; item.mean = metrics.mean;
+    item.grayStd = typeof metrics.std === "number" ? metrics.std : 0;
+    item.flat = item.grayStd < 12;
     item.overPct = metrics.overPct; item.underPct = metrics.underPct;
     if (metrics.hash && metrics.aHash) { item.hash = metrics.hash; item.aHash = metrics.aHash; }
     else { item.hash = dHash(thumb.ctx, thumb.w, thumb.h); item.aHash = aHash(thumb.ctx, thumb.w, thumb.h); }
@@ -714,40 +950,61 @@
       hashTh: +el.hashSlider.value, timeTh: (+el.timeSlider.value) * 1000,
     };
   }
+  function isFlat(p) {
+    return !!p.flat || (typeof p.grayStd === "number" && p.grayStd < 12);
+  }
+
+  /** Resolution-normalized absolute blur, or relative to group best. Flat ≠ blur. */
   function isBadQuality(p, th) {
-    const blur = p.sharp < th.sharpTh;
+    const flat = isFlat(p);
+    const best = typeof p.groupBestSharp === "number" ? p.groupBestSharp : 0;
+    const blurAbs = !flat && p.sharp < th.sharpTh;
+    const blurRel = !flat && best > th.sharpTh * 0.5 && p.sharp < best * 0.42;
+    const blur = blurAbs || blurRel;
     const over = p.mean >= 200 || p.overPct >= th.overTh;
     const under = p.mean <= 45 || p.underPct >= th.underTh;
-    return { blur: blur, over: over, under: under, bad: blur || over || under };
+    // Flat/solid is NOT auto-deleted for "blur"
+    return { blur: blur, flat: flat, over: over, under: under, bad: blur || over || under };
   }
 
   function autoChoiceFor(p, groupSize, th) {
     if (groupSize > 1) return p.isBest ? "keep" : "delete";
+    if (isFlat(p)) return "keep"; // 畫面單調：保留，不因低銳利度刪除
     return isBadQuality(p, th).bad ? "delete" : "keep";
   }
 
   /** D: one-sentence reason */
   function computeReason(p, groupSize, th) {
+    // Manual overrides first (QA strings)
+    if (p.userTouched) {
+      if (p.choice === "keep" && p.autoChoice === "delete") return "你手動保留";
+      if (p.choice === "delete" && p.autoChoice === "keep") return "你手動刪除";
+    }
     const q = isBadQuality(p, th);
     if (groupSize > 1) {
       if (p.isBest) {
-        if (p.choice === "keep") return "同組最清晰";
-        return "同組最佳但已手動改刪";
+        if (p.choice === "keep") {
+          if (q.flat) return "畫面單調";
+          return "同組最清晰";
+        }
+        return "你手動刪除";
       }
-      if (q.blur) return "同組較模糊";
+      if (q.flat) return "畫面單調";
+      if (q.blur) return (p.sharp < th.sharpTh) ? "模糊" : "同組較模糊";
       if (q.over && p.mean >= 220) return "明顯過曝";
       if (q.over) return "略微過曝";
       if (q.under && p.mean <= 25) return "明顯欠曝";
       if (q.under) return "略微欠曝";
       return "同組非最佳";
     }
+    if (q.flat) return "畫面單調";
     if (q.blur) return "模糊";
     if (q.over && p.mean >= 220) return "明顯過曝";
     if (q.over) return "略微過曝";
     if (q.under && p.mean <= 25) return "明顯欠曝";
     if (q.under) return "略微欠曝";
     if (p.choice === "keep") return "單張清晰保留";
-    return "單張已手動改刪";
+    return "你手動刪除";
   }
 
   function recomputeGroupsAndLabels() {
@@ -763,7 +1020,7 @@
         const b = analyzed[j];
         if (b.groupId != null) continue;
         const dist = hashDistance(a, b);
-        const timeOk = Math.abs(a.lastModified - b.lastModified) <= th.timeTh;
+        const timeOk = Math.abs(photoTime(a) - photoTime(b)) <= th.timeTh;
         if (dist <= 4 || (timeOk && dist <= th.hashTh)) b.groupId = gid;
       }
       gid++;
@@ -777,16 +1034,19 @@
       const g = byGroup[k];
       g.sort(function (a, b) { return qualityScore(b) - qualityScore(a); });
       g[0].isBest = true;
+      const bestSharp = Math.max.apply(null, g.map(function (x) { return x.sharp; }));
+      g.forEach(function (x) { x.groupBestSharp = bestSharp; });
     });
     analyzed.forEach(function (p) {
       const g = byGroup[p.groupId] || [p];
-      const q = isBadQuality(p, th);
-      if (!p.userTouched) p.choice = autoChoiceFor(p, g.length, th);
-      p.autoChoice = autoChoiceFor(p, g.length, th);
-      p.badQuality = q.bad;
-      p.suggestDelete = q.bad || (g.length > 1 && !p.isBest);
-      p.reason = computeReason(p, g.length, th);
       p.groupSize = g.length;
+      // autoChoice first (uses flat/blur), then reason uses autoChoice for manual strings
+      p.autoChoice = autoChoiceFor(p, g.length, th);
+      if (!p.userTouched) p.choice = p.autoChoice;
+      const q = isBadQuality(p, th);
+      p.badQuality = q.bad;
+      p.suggestDelete = (!q.flat && q.bad) || (g.length > 1 && !p.isBest);
+      p.reason = computeReason(p, g.length, th);
     });
   }
 
@@ -799,7 +1059,8 @@
     if (p.analyzed && p.thumbUrl && p.hash) {
       payload.analysis = {
         v: ANALYSIS_VERSION, sharp: p.sharp, mean: p.mean, overPct: p.overPct, underPct: p.underPct,
-        hash: p.hash, aHash: p.aHash, thumbUrl: p.thumbUrl,
+        grayStd: p.grayStd, flat: !!p.flat,
+        hash: p.hash, aHash: p.aHash, thumbUrl: p.thumbUrl, captureMs: p.captureMs, dateSource: p.dateSource,
       };
     }
     await idbSet(p.id, payload);
@@ -815,8 +1076,8 @@
       map[p.groupId].push(p);
     });
     return Object.keys(map).map(Number).sort(function (a, b) {
-      const ta = Math.min.apply(null, map[a].map(function (p) { return p.lastModified; }));
-      const tb = Math.min.apply(null, map[b].map(function (p) { return p.lastModified; }));
+      const ta = Math.min.apply(null, map[a].map(function (p) { return photoTime(p); }));
+      const tb = Math.min.apply(null, map[b].map(function (p) { return photoTime(p); }));
       return ta - tb;
     }).map(function (gid) {
       const g = map[gid].slice().sort(function (a, b) {
@@ -880,20 +1141,86 @@
     if (formatDateTaipei(startMs) === formatDateTaipei(endMs)) return formatDateTaipei(startMs) + " " + t0 + " – " + t1;
     return formatDateTaipei(startMs) + " " + t0 + " – " + formatDateTaipei(endMs) + " " + t1;
   }
+  function dayKeyTaipei(ms) {
+    try {
+      return new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Taipei", year: "numeric", month: "2-digit", day: "2-digit"
+      }).format(new Date(ms));
+    } catch (_) {
+      const d = new Date(ms);
+      return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+    }
+  }
+  function hourTaipei(ms) {
+    try {
+      return +new Intl.DateTimeFormat("en-US", {
+        timeZone: "Asia/Taipei", hour: "numeric", hour12: false
+      }).format(new Date(ms));
+    } catch (_) {
+      return new Date(ms).getHours();
+    }
+  }
+  function formatHmTaipei(ms) {
+    try {
+      return new Intl.DateTimeFormat("zh-TW", {
+        timeZone: "Asia/Taipei", hour: "2-digit", minute: "2-digit", hour12: false
+      }).format(new Date(ms));
+    } catch (_) {
+      const d = new Date(ms);
+      return pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+    }
+  }
+  /** PM: one block per day; split 上午/下午 only when a day is large. Target <=20 segs for ~300 dels. */
+
+  function photoTime(p) { return typeof p.captureMs === "number" ? p.captureMs : p.lastModified; }
+  function anyFileDate(list) {
+    return list.some(function (p) { return p.dateSource !== "exif"; });
+  }
+  function allFileDate(list) {
+    const a = list.filter(function (p) { return p.analyzed; });
+    return a.length > 0 && a.every(function (p) { return p.dateSource !== "exif"; });
+  }
   function buildDeleteSegments(dels) {
     const sorted = dels.slice().sort(function (a, b) {
-      return a.lastModified - b.lastModified || a.name.localeCompare(b.name);
+      return photoTime(a) - photoTime(b) || a.name.localeCompare(b.name);
     });
+    const byDay = {};
+    const dayOrder = [];
+    sorted.forEach(function (p) {
+      const k = dayKeyTaipei(photoTime(p));
+      if (!byDay[k]) { byDay[k] = []; dayOrder.push(k); }
+      byDay[k].push(p);
+    });
+    // Day-level only when ALL photos lack EXIF (avoid segment explosion from file mtimes).
+    // Otherwise split 上午/下午 only for busy days.
+    const forceDayOnly = allFileDate(photos);
+    const SPLIT_DAY = 24;
     const segs = [];
-    for (let i = 0; i < sorted.length; i++) {
-      const p = sorted[i];
-      const last = segs[segs.length - 1];
-      if (!last || p.lastModified - last.endMs > SEG_GAP_MS) {
-        segs.push({ photos: [p], startMs: p.lastModified, endMs: p.lastModified });
+    dayOrder.forEach(function (k) {
+      const list = byDay[k];
+      if (!forceDayOnly && list.length > SPLIT_DAY) {
+        const am = list.filter(function (p) { return hourTaipei(photoTime(p)) < 12; });
+        const pm = list.filter(function (p) { return hourTaipei(photoTime(p)) >= 12; });
+        [{ photos: am, part: "上午" }, { photos: pm, part: "下午" }].forEach(function (part) {
+          if (!part.photos.length) return;
+          segs.push({
+            photos: part.photos,
+            startMs: photoTime(part.photos[0]),
+            endMs: photoTime(part.photos[part.photos.length - 1]),
+            dateLabel: formatDateTaipei(photoTime(part.photos[0])),
+            partLabel: part.part,
+          });
+        });
       } else {
-        last.photos.push(p); last.endMs = p.lastModified;
+        segs.push({
+          photos: list,
+          startMs: photoTime(list[0]),
+          endMs: photoTime(list[list.length - 1]),
+          dateLabel: formatDateTaipei(photoTime(list[0])),
+          partLabel: "",
+        });
       }
-    }
+    });
     return segs;
   }
   function segmentCopyText(seg) {
@@ -909,12 +1236,38 @@
 
   function cardHtml(p, opts) {
     opts = opts || {};
+    const compact = !!(opts && opts.compact);
     const cls = ["card", p.choice === "keep" ? "keep" : "delete"];
+    if (compact) cls.push("card-compact");
     const tags = [];
     if (p.isBest && p.groupSize > 1) tags.push('<span class="tag best">建議留下</span>');
     if (p.userTouched) tags.push('<span class="tag manual">手動</span>');
     const badgeCls = p.choice === "keep" ? "keep" : "delete";
     const badgeText = p.choice === "keep" ? "留" : "刪";
+    const showRestore = p.userTouched && p.choice !== p.autoChoice;
+    const switchHtml =
+      '<div class="seg-switch" role="group" aria-label="留或刪">' +
+        '<button type="button" class="seg-opt keep' + (p.choice === "keep" ? " on" : "") + '" data-act="keep">留</button>' +
+        '<button type="button" class="seg-opt del' + (p.choice === "delete" ? " on" : "") + '" data-act="delete">刪</button>' +
+      "</div>";
+    const restoreHtml = showRestore
+      ? '<button type="button" class="restore-link" data-act="restore">還原</button>'
+      : "";
+    if (compact) {
+      return (
+        '<article class="' + cls.join(" ") + '" data-id="' + escapeAttr(p.id) + '">' +
+          '<div class="thumb-wrap">' +
+            '<span class="thumb-placeholder"></span>' +
+            '<img data-src="' + (p.thumbUrl ? escapeAttr(p.thumbUrl) : "") + '" alt="" />' +
+            '<span class="choice-badge ' + badgeCls + '">' + badgeText + "</span>" +
+          "</div>" +
+          '<div class="meta meta-compact">' +
+            '<div class="reason">' + escapeHtml(p.reason || "") + "</div>" +
+            switchHtml + restoreHtml +
+          "</div>" +
+        "</article>"
+      );
+    }
     return (
       '<article class="' + cls.join(" ") + '" data-id="' + escapeAttr(p.id) + '">' +
         '<div class="thumb-wrap">' +
@@ -927,11 +1280,7 @@
           '<div class="fname">' + escapeHtml(p.name) + "</div>" +
           '<div class="reason">' + escapeHtml(p.reason || "") + "</div>" +
           '<div class="scores">清晰度 ' + Math.round(p.sharp) + " · 亮度 " + Math.round(p.mean) + "</div>" +
-          '<div class="actions">' +
-            '<button type="button" class="btn btn-keep" data-act="keep">' + (p.choice === "keep" ? "✓ 留" : "留") + "</button>" +
-            '<button type="button" class="btn btn-del" data-act="delete">' + (p.choice === "delete" ? "✓ 刪" : "刪") + "</button>" +
-            '<button type="button" class="btn btn-ghost" data-act="restore">還原</button>' +
-          "</div>" +
+          '<div class="card-controls">' + switchHtml + restoreHtml + "</div>" +
         "</div>" +
       "</article>"
     );
@@ -977,8 +1326,19 @@
     el.resultScreen.classList.toggle("hidden", mode !== "result");
     el.finishPanel.classList.toggle("hidden", mode !== "finish");
     el.mainFooter.classList.toggle("hidden", mode !== "result");
-    // A: hide thresholds on home unless 進階 open; never show on finish
-    if (mode !== "home") el.advPanel.classList.add("hidden");
+    if (el.homeTitle) el.homeTitle.classList.toggle("hidden", mode !== "home");
+    if (el.homeSub) el.homeSub.classList.toggle("hidden", mode !== "home");
+    if (mode !== "home") {
+      if (!el.resultAdvPanel.contains(el.advPanel)) {
+        // keep adv where it is if opened under result
+      }
+      if (mode !== "result") {
+        document.getElementById("homeScreen").appendChild(el.advPanel);
+        el.advPanel.classList.add("hidden");
+        el.resultAdvPanel.classList.add("hidden");
+      }
+    }
+    if (mode === "result") el.progressBlock.classList.add("hidden");
   }
 
   function renderResult() {
@@ -986,9 +1346,15 @@
     const dels = deletedPhotos();
     const total = photos.filter(function (p) { return p.analyzed; }).length;
     el.summaryCounts.innerHTML =
-      '<span class="c-keep"><strong>' + kept.length + "</strong>留下</span>" +
-      '<span class="c-del"><strong>' + dels.length + "</strong>刪除</span>" +
-      "<span><strong>" + total + "</strong>共</span>";
+      '<span class="c-keep">留 <strong>' + kept.length + "</strong></span>" +
+      '<span class="sep">　</span>' +
+      '<span class="c-del">刪 <strong>' + dels.length + "</strong></span>" +
+      '<span class="sep">　</span>' +
+      '<span class="c-total">共 <strong>' + total + "</strong></span>";
+
+    const hintDismissed = localStorage.getItem(HINT_KEY) === "1";
+    if (el.resultHint) el.resultHint.classList.toggle("hidden", hintDismissed);
+    renderUnreadBoxes();
 
     const groups = groupsOrdered();
     if (!groups.length) {
@@ -1000,10 +1366,14 @@
       const open = !!expandedGroups[g.gid];
       let html = '<div class="group-block" data-gid="' + g.gid + '">' + cardHtml(g.best);
       if (others.length) {
-        html += '<button type="button" class="expand-btn" data-expand="' + g.gid + '">' +
-          (open ? "收合 " + others.length + " 張同組" : ("展開 " + others.length + " 張同組")) + "</button>";
+        const label = open
+          ? ("收合 " + others.length + " 張同組照片")
+          : ("展開 " + others.length + " 張同組照片");
+        html += '<button type="button" class="expand-btn' + (open ? " open" : "") + '" data-expand="' + g.gid + '">' +
+          '<span class="expand-label">' + label + "</span>" +
+          '<span class="chevron" aria-hidden="true"></span></button>';
         html += '<div class="group-extras' + (open ? "" : " hidden") + '" data-extras="' + g.gid + '">' +
-          others.map(function (p) { return cardHtml(p); }).join("") + "</div>";
+          others.map(function (p) { return cardHtml(p, { compact: true }); }).join("") + "</div>";
       }
       html += "</div>";
       return html;
@@ -1011,37 +1381,71 @@
     setupLazyThumbs(el.cards);
   }
 
+  function thumbCellHtml(p) {
+    const hm = formatHmTaipei(photoTime(p));
+    const img = p.thumbUrl
+      ? '<img src="' + p.thumbUrl + '" alt="' + escapeAttr(p.name) + '" loading="lazy" />'
+      : '<img alt="" />';
+    return '<div class="seg-thumb" title="' + escapeAttr(p.name) + '">' + img +
+      '<span class="seg-time">' + escapeHtml(hm) + "</span></div>";
+  }
+  function renderUnreadBoxes() {
+    const n = unreadableFiles.length;
+    const show = n > 0;
+    [ [el.unreadBox, el.unreadSummary, el.unreadList],
+      [el.unreadBoxResult, el.unreadSummaryResult, el.unreadListResult] ].forEach(function (triple) {
+      const box = triple[0], sum = triple[1], list = triple[2];
+      if (!box) return;
+      box.classList.toggle("hidden", !show);
+      if (!show) return;
+      sum.textContent = "有 " + n + " 張無法讀取";
+      list.innerHTML = unreadableFiles.map(function (name) {
+        return "<li>" + escapeHtml(name) + "</li>";
+      }).join("");
+    });
+  }
   function renderFinish() {
     const kept = keptPhotos();
     const dels = deletedPhotos();
-    el.keepCount.textContent = kept.length + " 張";
-    el.keepList.innerHTML = kept.map(function (p) {
-      return "<li>" + escapeHtml(p.name) + " · " + escapeHtml(p.reason || "") + "</li>";
-    }).join("") || "<li>（無）</li>";
     const segs = buildDeleteSegments(dels);
-    el.delCount.textContent = dels.length + " 張 · " + segs.length + " 個時段";
+    el.delHeadline.textContent = "要刪 " + dels.length + " 張";
+    el.delCount.textContent = dels.length + " 張 · " + segs.length + " 天";
+    const showDateWarn = dels.concat(kept).some(function (p) { return p.dateSource !== "exif"; });
+    el.dateWarn.classList.toggle("hidden", !showDateWarn);
+    renderUnreadBoxes();
     if (!segs.length) {
       el.delSegments.innerHTML = '<div class="empty" style="padding:12px 0">沒有要刪的照片</div>';
     } else {
       el.delSegments.innerHTML = segs.map(function (seg, idx) {
-        const thumbs = seg.photos.map(function (p) {
-          return p.thumbUrl
-            ? '<img src="' + p.thumbUrl + '" alt="' + escapeAttr(p.name) + '" title="' + escapeAttr(p.name) + '" />'
-            : '<img alt="" />';
-        }).join("");
+        const open = !!expandedSegThumbs[idx];
+        const initial = seg.photos.slice(0, 6);
+        const rest = seg.photos.slice(6);
+        let thumbs = initial.map(thumbCellHtml).join("");
+        if (open && rest.length) {
+          thumbs += rest.map(thumbCellHtml).join("");
+        } else if (rest.length) {
+          thumbs += '<button type="button" class="more-thumbs-btn" data-more-seg="' + idx + '">還有 ' + rest.length + " 張</button>";
+        }
+        const titleDate = escapeHtml(seg.dateLabel) + (seg.partLabel ? " · " + escapeHtml(seg.partLabel) : "");
         return (
           '<section class="del-seg" data-seg="' + idx + '">' +
             '<div class="del-seg-head">' +
-              '<div class="del-seg-title">' + escapeHtml(formatDateTimeRange(seg.startMs, seg.endMs)) + "</div>" +
+              '<div class="del-seg-title">' +
+                '<div class="del-seg-date">' + titleDate + "</div>" +
+              "</div>" +
               '<span class="count-chip">' + seg.photos.length + " 張</span>" +
             "</div>" +
-            '<div class="seg-grid">' + thumbs + "</div>" +
+            '<div class="seg-grid" data-seg-grid="' + idx + '">' + thumbs + "</div>" +
             '<button type="button" class="btn btn-ghost seg-copy" data-copy-seg="' + idx + '">複製刪除清單</button>' +
           "</section>"
         );
       }).join("");
       el.delSegments._segs = segs;
     }
+    el.keepCount.textContent = kept.length + " 張";
+    el.keepList.innerHTML = kept.map(function (p) {
+      return "<li>" + escapeHtml(p.name) + " · " + escapeHtml(p.reason || "") + "</li>";
+    }).join("") || "<li>（無）</li>";
   }
 
   function render() {
@@ -1077,6 +1481,8 @@
       return;
     }
     photos = [];
+    unreadableFiles = [];
+    expandedSegThumbs = {};
     showFinish = false;
     expandedGroups = {};
     setScreen("home");
@@ -1097,7 +1503,8 @@
         const id = fileKey(file.name, file.size, file.lastModified);
         const item = {
           id: id, file: file, name: file.name, size: file.size, lastModified: file.lastModified,
-          thumbUrl: null, sharp: 0, mean: 0, overPct: 0, underPct: 0, hash: "", aHash: "",
+          captureMs: file.lastModified, dateSource: "file",
+          thumbUrl: null, sharp: 0, mean: 0, grayStd: 0, flat: false, overPct: 0, underPct: 0, hash: "", aHash: "",
           groupId: null, isBest: false, choice: "keep", autoChoice: "keep", userTouched: false,
           reason: "", labels: [], suggestDelete: false, badQuality: false, analyzed: false,
           fromCache: false, groupSize: 1,
@@ -1114,7 +1521,8 @@
         } catch (err) {
           console.warn(err); item.analyzed = false;
         }
-        photos.push(item);
+        if (item.analyzed) photos.push(item);
+        else unreadableFiles.push(file.name);
       }));
       const done = Math.min(i + BATCH, files.length);
       const pct = Math.round((done / files.length) * 100);
@@ -1141,9 +1549,22 @@
   el.btnAdvToggle.addEventListener("click", function () {
     el.advPanel.classList.toggle("hidden");
   });
+  function closeMoreMenu() {
+    if (el.moreMenu) el.moreMenu.classList.add("hidden");
+    if (el.btnMore) el.btnMore.setAttribute("aria-expanded", "false");
+  }
+  el.btnMore.addEventListener("click", function (e) {
+    e.stopPropagation();
+    const open = el.moreMenu.classList.toggle("hidden") === false;
+    el.btnMore.setAttribute("aria-expanded", open ? "true" : "false");
+  });
+  document.addEventListener("click", function (e) {
+    if (!el.moreMenu || el.moreMenu.classList.contains("hidden")) return;
+    if (e.target.closest("#moreMenu") || e.target.closest("#btnMore")) return;
+    closeMoreMenu();
+  });
   el.btnResultAdv.addEventListener("click", function () {
-    // move/show same sliders under result: open home adv panel content by toggling a clone note + scroll home is awkward;
-    // instead unhide advPanel temporarily inside result by relocating — simplest: toggle advPanel visibility attached under resultAdvPanel
+    closeMoreMenu();
     const open = el.resultAdvPanel.classList.toggle("hidden") === false;
     if (open) {
       el.resultAdvPanel.appendChild(el.advPanel);
@@ -1154,12 +1575,34 @@
     }
   });
   el.btnReselect.addEventListener("click", function () {
+    closeMoreMenu();
     photos = []; showFinish = false; el.fileInput.value = "";
     document.getElementById("homeScreen").appendChild(el.advPanel);
     el.advPanel.classList.add("hidden");
     el.progressBlock.classList.add("hidden");
+    el.resultAdvPanel.classList.add("hidden");
     setScreen("home");
   });
+  el.btnHintClose.addEventListener("click", function () {
+    localStorage.setItem(HINT_KEY, "1");
+    el.resultHint.classList.add("hidden");
+  });
+  el.btnKeepToggle.addEventListener("click", function () {
+    const open = el.keepBody.classList.toggle("hidden") === false;
+    el.btnKeepToggle.classList.toggle("open", open);
+    el.btnKeepToggle.setAttribute("aria-expanded", open ? "true" : "false");
+  });
+  function wireUnreadToggle(btn, list) {
+    if (!btn || !list) return;
+    btn.addEventListener("click", function () {
+      const open = list.classList.toggle("hidden") === false;
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+      btn.classList.toggle("open", open);
+    });
+  }
+  wireUnreadToggle(el.btnUnreadToggle, el.unreadList);
+  wireUnreadToggle(el.btnUnreadToggleResult, el.unreadListResult);
+
 
   ["sharpSlider", "overSlider", "underSlider", "hashSlider", "timeSlider"].forEach(function (id) {
     el[id].addEventListener("input", function () {
@@ -1226,6 +1669,7 @@
   });
 
   el.btnRestoreAll.addEventListener("click", async function () {
+    closeMoreMenu();
     photos.forEach(function (p) {
       if (!p.analyzed) return;
       p.userTouched = false;
@@ -1247,6 +1691,34 @@
     render();
   });
   el.delSegments.addEventListener("click", async function (e) {
+    const more = e.target.closest("[data-more-seg]");
+    if (more) {
+      const idx = +more.getAttribute("data-more-seg");
+      const segs = el.delSegments._segs || [];
+      const seg = segs[idx];
+      if (!seg) return;
+      const grid = el.delSegments.querySelector('[data-seg-grid="' + idx + '"]');
+      if (!grid) return;
+      more.remove();
+      const rest = seg.photos.slice(6);
+      const BATCH = 12;
+      let i = 0;
+      function addBatch() {
+        const chunk = rest.slice(i, i + BATCH);
+        chunk.forEach(function (p) {
+          grid.insertAdjacentHTML("beforeend", thumbCellHtml(p));
+        });
+        i += BATCH;
+        if (i < rest.length) {
+          requestAnimationFrame(addBatch);
+        } else {
+          expandedSegThumbs[idx] = true;
+        }
+      }
+      addBatch();
+      return;
+    }
+
     const btn = e.target.closest("[data-copy-seg]");
     if (!btn) return;
     const segs = el.delSegments._segs || [];
