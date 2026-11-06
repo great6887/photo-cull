@@ -205,12 +205,20 @@
   .thumb-wrap img {
     width: 100%; height: 100%; object-fit: cover; display: block;
     position: absolute; inset: 0;
+    opacity: 0;
+  }
+  .thumb-wrap img.is-ready {
+    opacity: 1;
+    transition: opacity 150ms ease-out;
   }
   .thumb-placeholder {
-    color: var(--muted); font-size: 14px; position: absolute; inset: 0;
-    display: flex; align-items: center; justify-content: center;
-    background: linear-gradient(90deg, var(--chip), #e4e6ea, var(--chip));
-    background-size: 200% 100%;
+    color: var(--muted); font-size: 13px; position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    padding: 8px; line-height: 1.35;
+    background: #E8EAED; /* light-gray 4:3 plate — never an upscaled 256 */
+  }
+  .thumb-placeholder.reselect {
+    color: var(--warn); font-weight: 600; font-size: 13px;
   }
   .choice-badge {
     position: absolute; top: 10px; right: 10px; z-index: 2;
@@ -320,6 +328,17 @@
     display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
     width: 100%; max-width: 100%;
   }
+  .seg-hour-div {
+    grid-column: 1 / -1;
+    display: flex; align-items: center; gap: 10px;
+    margin: 6px 0 2px; padding: 0; min-height: 28px;
+    color: #6B7280; font-size: 14px; font-weight: 700; line-height: 1.2;
+    pointer-events: none; user-select: none;
+  }
+  .seg-hour-div::before, .seg-hour-div::after {
+    content: ""; flex: 1 1 auto; height: 1px; background: #D1D5DB; min-width: 12px;
+  }
+  .seg-hour-div span { flex: 0 0 auto; letter-spacing: 0.02em; }
   .seg-thumb { position: relative; width: 100%; border-radius: 8px; overflow: hidden; background: var(--chip); }
   .seg-thumb img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
   .seg-time {
@@ -376,10 +395,138 @@
     border-radius: 10px; border: 1px dashed var(--border); background: var(--chip);
     color: var(--text); font-size: 14px; font-weight: 650; cursor: pointer; font-family: inherit;
   }
+
+  /* —— Full-image viewer (v8e) —— */
+  body.viewer-open { overflow: hidden; touch-action: none; }
+  body.viewer-open .viewer-page-chrome {
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+  #viewer {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,.92);
+    display: flex; flex-direction: column;
+    opacity: 0; pointer-events: none;
+    transition: opacity 200ms ease;
+    touch-action: none;
+    -webkit-user-select: none; user-select: none;
+  }
+  #viewer.open { opacity: 1; pointer-events: auto; }
+  #viewer.closing { opacity: 0; pointer-events: none; }
+  #viewer .viewer-stage {
+    flex: 1; position: relative; min-height: 0;
+    padding: calc(12px + env(safe-area-inset-top, 0px)) 8px calc(12px + 120px + env(safe-area-inset-bottom, 0px));
+    display: flex; align-items: center; justify-content: center;
+  }
+  #viewer .viewer-backdrop-hit {
+    position: absolute; inset: 0; z-index: 0;
+  }
+  #viewer .viewer-frame {
+    position: relative; z-index: 1;
+    max-width: calc(100% - 0px); max-height: 100%;
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #viewer .viewer-ph {
+    position: absolute; inset: 10% 8px;
+    background: #E8EAED; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: #6B7280; font-size: 14px; text-align: center; padding: 16px;
+    z-index: 1;
+  }
+  #viewer .viewer-ph.hidden { display: none; }
+  #viewer .viewer-ph.fallback {
+    color: #C4871A; font-weight: 600;
+    inset: auto 8px calc(130px + env(safe-area-inset-bottom, 0px)) 8px;
+    top: auto; height: auto; min-height: 44px;
+    background: rgba(232,234,237,.95); z-index: 4;
+  }
+  #viewer .viewer-stage { touch-action: none; }
+  #viewer .viewer-img {
+    position: relative; z-index: 2;
+    max-width: 100%; max-height: 100%;
+    width: auto; height: auto;
+    object-fit: contain;
+    opacity: 0;
+    transition: opacity 150ms ease-out;
+    pointer-events: none;
+    will-change: transform;
+    transform-origin: 0 0;
+    transform: translate3d(0px, 0px, 0) scale(1);
+  }
+  #viewer .viewer-img.is-ready { opacity: 1; }
+  #viewer .viewer-img.zoom-anim {
+    transition: opacity 150ms ease-out, transform 150ms ease-out;
+  }
+  #viewer .viewer-top {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 5;
+    padding: calc(8px + env(safe-area-inset-top, 0px)) 56px 8px 56px;
+    text-align: center; pointer-events: none;
+  }
+  #viewer .viewer-count, #viewer .viewer-reason {
+    color: #fff; font-size: 14px; line-height: 1.35; margin: 0;
+    text-shadow: 0 1px 2px rgba(0,0,0,.45);
+  }
+  #viewer .viewer-count { font-weight: 700; }
+  #viewer .viewer-reason { opacity: .92; margin-top: 2px; }
+  #viewer .viewer-close {
+    position: absolute; top: calc(8px + env(safe-area-inset-top, 0px)); left: 10px; z-index: 6;
+    width: 44px; height: 44px; border-radius: 50%; border: none;
+    background: rgba(255,255,255,.2); color: #fff; font-size: 22px; line-height: 1;
+    cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center;
+  }
+  #viewer .viewer-nav {
+    position: absolute; top: 50%; transform: translateY(-50%); z-index: 6;
+    width: 44px; height: 44px; border-radius: 50%; border: none;
+    background: rgba(255,255,255,.2); color: #fff; font-size: 22px; line-height: 1;
+    cursor: pointer; font-family: inherit;
+    opacity: 1;
+    transition: opacity 150ms ease;
+  }
+  #viewer .viewer-nav.prev { left: 6px; }
+  #viewer .viewer-nav.next { right: 6px; }
+  #viewer .viewer-nav:disabled { opacity: .35; }
+  #viewer .viewer-nav.zoom-hidden {
+    opacity: 0 !important;
+    pointer-events: none;
+  }
+  #viewer .viewer-bottom {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 6;
+    padding: 10px 14px calc(12px + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(180deg, transparent, rgba(0,0,0,.55) 28%, rgba(0,0,0,.75));
+  }
+  #viewer .viewer-manual {
+    color: #fff; font-size: 14px; text-align: center; min-height: 20px; margin: 0 0 8px;
+  }
+  #viewer .viewer-bottom-row {
+    display: flex; align-items: center; gap: 8px;
+  }
+  #viewer .viewer-bottom .seg-switch {
+    flex: 1; max-width: none; height: 48px; min-height: 48px;
+    background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.25);
+  }
+  #viewer .viewer-bottom .seg-opt { min-height: 48px; color: rgba(255,255,255,.7); }
+  #viewer .viewer-bottom .seg-opt.keep.on { background: #16A34A; color: #fff; }
+  #viewer .viewer-bottom .seg-opt.del.on { background: #E5484D; color: #fff; }
+  #viewer .viewer-restore {
+    flex: 0 0 auto; min-width: 44px; min-height: 44px; padding: 0 10px;
+    border: none; background: transparent; color: #fff; font-size: 14px;
+    font-weight: 650; cursor: pointer; font-family: inherit;
+  }
+  #viewer .viewer-restore.hidden { visibility: hidden; pointer-events: none; }
+  .btn-view-full {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 44px; min-width: 44px; padding: 8px 12px; margin-top: 8px;
+    border-radius: 12px; border: 1px solid var(--border); background: var(--chip);
+    color: var(--accent); font-size: 14px; font-weight: 700; cursor: pointer;
+    font-family: inherit; width: 100%;
+  }
+  .card-compact .btn-view-full { margin-top: 6px; }
+
 </style>
 </head>
 <body class="screen-home">
-<div class="summary-bar" id="summaryBar">
+<div class="summary-bar viewer-page-chrome" id="summaryBar">
   <div class="summary-bar-inner">
     <div id="summaryCounts"></div>
     <button type="button" class="btn-more" id="btnMore" aria-label="更多" aria-expanded="false" aria-haspopup="true">⋯</button>
@@ -391,7 +538,7 @@
   </div>
 </div>
 
-<div class="wrap" id="app">
+<div class="wrap viewer-page-chrome" id="app">
   <h1 id="homeTitle">照片篩選工具</h1>
   <p class="sub" id="homeSub">照片只在這台手機處理，不會上傳。選完後自動挑出每組最佳張。</p>
 
@@ -477,24 +624,65 @@
   </div>
 </div>
 
-<div class="footer hidden" id="mainFooter">
+<div class="footer hidden viewer-page-chrome" id="mainFooter">
   <div class="footer-inner">
     <button type="button" class="btn btn-primary" id="btnConfirm">確認</button>
   </div>
 </div>
+
+<div id="viewer" class="" aria-hidden="true" role="dialog" aria-modal="true" aria-label="照片大圖">
+  <button type="button" class="viewer-close" id="viewerClose" aria-label="關閉">×</button>
+  <div class="viewer-top">
+    <p class="viewer-count" id="viewerCount">1 / 1</p>
+    <p class="viewer-reason" id="viewerReason"></p>
+  </div>
+  <div class="viewer-stage" id="viewerStage">
+    <div class="viewer-backdrop-hit" id="viewerBackdrop"></div>
+    <div class="viewer-frame" id="viewerFrame">
+      <div class="viewer-ph" id="viewerPh" aria-hidden="true"></div>
+      <img class="viewer-img" id="viewerImg" alt="" draggable="false" />
+    </div>
+    <button type="button" class="viewer-nav prev" id="viewerPrev" aria-label="上一張">‹</button>
+    <button type="button" class="viewer-nav next" id="viewerNext" aria-label="下一張">›</button>
+  </div>
+  <div class="viewer-bottom">
+    <p class="viewer-manual" id="viewerManual"></p>
+    <div class="viewer-bottom-row">
+      <div class="seg-switch" role="group" aria-label="留或刪">
+        <button type="button" class="seg-opt keep" id="viewerKeep" data-viewer-act="keep">留</button>
+        <button type="button" class="seg-opt del" id="viewerDel" data-viewer-act="delete">刪</button>
+      </div>
+      <button type="button" class="viewer-restore hidden" id="viewerRestore" data-viewer-act="restore">還原</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast hidden" role="status"></div>
 
 <script>
 (function () {
   "use strict";
+  if (typeof CSS === "undefined") window.CSS = {};
+  if (!CSS.escape) CSS.escape = function (s) { return String(s).replace(/[^a-zA-Z0-9_-]/g, function (c) { return "\\" + c; }); };
 
-  const THUMB_MAX = 512;
-  const BATCH = 6;
+  const ANALYZE_MAX = 512;   // metrics + perceptual hash (v5 parity)
+  const THUMB_MAX = 256;     // finish-page grid thumbs (always)
+  const DISPLAY_MAX = 720;   // result-card display JPEG (lazy, viewport)
+  const BATCH_CONCURRENCY = 6;
+  const LIVE_THUMB_CAP = 36;       // finish 256 blob URLs
+  const DISPLAY_LIVE_CAP = 12;     // nearby live 720 URLs / in-flight+queued encodes
+  const DISPLAY_ENC_CONCURRENCY = 2;
+  const BATCH = BATCH_CONCURRENCY;
   const DB_NAME = "photo-cull-v1";
   const STORE = "choices";
   const SETTINGS_KEY = "photo-cull-settings-v1";
   const HINT_KEY = "photo-cull-hint-dismissed-v1";
-  const ANALYSIS_VERSION = 5;
+  /**
+   * ANALYSIS_VERSION 9 — cold stores analysis + 256 thumb only (no eager 720).
+   * Rejects v≤8 caches so we never revive stale v7/v8b labels or require missing displayBlob.
+   * Optional displayBlob may be written later after lazy 720 encode.
+   */
+  const ANALYSIS_VERSION = 9;
   const SEG_GAP_MS = 3 * 60 * 1000;
 
   let photos = [];
@@ -601,6 +789,19 @@
       req.onerror = function () { reject(req.error); };
     });
   }
+  async function idbSetMany(entries) {
+    if (!entries.length) return;
+    try {
+      const db = await openDB();
+      await new Promise(function (resolve, reject) {
+        const tx = db.transaction(STORE, "readwrite");
+        const store = tx.objectStore(STORE);
+        for (let i = 0; i < entries.length; i++) store.put(entries[i].value, entries[i].key);
+        tx.oncomplete = function () { resolve(); };
+        tx.onerror = function () { reject(tx.error); };
+      });
+    } catch (_) {}
+  }
   async function idbGet(key) {
     try {
       const db = await openDB();
@@ -638,20 +839,277 @@
     return new Promise(function (resolve, reject) {
       const url = URL.createObjectURL(file);
       const img = new Image();
-      img.onload = function () { URL.revokeObjectURL(url); resolve(img); };
-      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error(file.name)); };
+      img.decoding = "async";
+      const finish = function () {
+        URL.revokeObjectURL(url);
+        resolve(img);
+      };
+      const fail = function () {
+        URL.revokeObjectURL(url);
+        reject(new Error(file.name));
+      };
+      img.onerror = fail;
       img.src = url;
+      // img.decode() lets the browser finish decode off the long-task path when supported
+      if (typeof img.decode === "function") {
+        img.decode().then(finish).catch(function () {
+          if (img.complete && img.naturalWidth) finish();
+          else fail();
+        });
+      } else {
+        img.onload = finish;
+      }
     });
   }
+  let sharedThumbCanvas = null;
+  let sharedThumbCtx = null;
+  let sharedDisplayCanvas = null;
+  let sharedDisplayCtx = null;
+  let sharedHashCanvas = null;
+  function getSharedThumb() {
+    if (!sharedThumbCanvas) {
+      sharedThumbCanvas = document.createElement("canvas");
+      sharedThumbCtx = sharedThumbCanvas.getContext("2d", { willReadFrequently: true, alpha: false });
+    }
+    return { canvas: sharedThumbCanvas, ctx: sharedThumbCtx };
+  }
+  function getSharedDisplay() {
+    if (!sharedDisplayCanvas) {
+      sharedDisplayCanvas = document.createElement("canvas");
+      sharedDisplayCtx = sharedDisplayCanvas.getContext("2d", { alpha: false });
+    }
+    return { canvas: sharedDisplayCanvas, ctx: sharedDisplayCtx };
+  }
+  function drawToCanvas(holder, img, maxSide) {
+    const sw = img.naturalWidth || img.width;
+    const sh = img.naturalHeight || img.height;
+    const scale = Math.min(1, maxSide / Math.max(sw, sh));
+    const w = Math.max(1, Math.round(sw * scale));
+    const h = Math.max(1, Math.round(sh * scale));
+    holder.canvas.width = w; holder.canvas.height = h;
+    holder.ctx.drawImage(img, 0, 0, w, h);
+    return { canvas: holder.canvas, ctx: holder.ctx, w: w, h: h };
+  }
+  function getSharedHashCanvas() {
+    if (!sharedHashCanvas) sharedHashCanvas = document.createElement("canvas");
+    return sharedHashCanvas;
+  }
   function drawThumb(img, maxSide) {
-    const scale = Math.min(1, maxSide / Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height));
-    const w = Math.max(1, Math.round((img.naturalWidth || img.width) * scale));
-    const h = Math.max(1, Math.round((img.naturalHeight || img.height) * scale));
-    const canvas = document.createElement("canvas");
-    canvas.width = w; canvas.height = h;
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    ctx.drawImage(img, 0, 0, w, h);
-    return { canvas: canvas, ctx: ctx, w: w, h: h };
+    const sw = img.naturalWidth || img.width;
+    const sh = img.naturalHeight || img.height;
+    const scale = Math.min(1, maxSide / Math.max(sw, sh));
+    const w = Math.max(1, Math.round(sw * scale));
+    const h = Math.max(1, Math.round(sh * scale));
+    const shared = getSharedThumb();
+    shared.canvas.width = w; shared.canvas.height = h;
+    shared.ctx.drawImage(img, 0, 0, w, h);
+    return { canvas: shared.canvas, ctx: shared.ctx, w: w, h: h };
+  }
+  function canvasToJpegBlob(canvas, quality) {
+    return new Promise(function (resolve) {
+      if (canvas.toBlob) {
+        canvas.toBlob(function (b) { resolve(b || null); }, "image/jpeg", quality);
+      } else {
+        const dataUrl = canvas.toDataURL("image/jpeg", quality);
+        const bin = atob(dataUrl.split(",")[1]);
+        const arr = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+        resolve(new Blob([arr], { type: "image/jpeg" }));
+      }
+    });
+  }
+  const liveThumbOrder = []; // entries: { id, kind }
+  const displayLiveOrder = []; // { id } live 720 object URLs
+  let displayEncodeQueue = []; // { item, img }
+  let displayEncodeInflight = 0;
+
+  function revokeOneUrl(p, kind) {
+    if (!p) return;
+    if (kind === "display") {
+      if (p.displayUrl && p.displayUrl.indexOf("blob:") === 0) {
+        try { URL.revokeObjectURL(p.displayUrl); } catch (_) {}
+      }
+      p.displayUrl = null;
+    } else {
+      if (p.thumbUrl && p.thumbUrl.indexOf("blob:") === 0) {
+        try { URL.revokeObjectURL(p.thumbUrl); } catch (_) {}
+      }
+      p.thumbUrl = null;
+    }
+  }
+  function revokeThumbUrl(p) {
+    if (!p) return;
+    revokeOneUrl(p, "thumb");
+    revokeOneUrl(p, "display");
+    for (let i = liveThumbOrder.length - 1; i >= 0; i--) {
+      if (liveThumbOrder[i].id === p.id) liveThumbOrder.splice(i, 1);
+    }
+  }
+  function trimLiveThumbs() {
+    while (liveThumbOrder.length > LIVE_THUMB_CAP) {
+      const ent = liveThumbOrder.shift();
+      const p = photos.find(function (x) { return x.id === ent.id; });
+      if (p) revokeOneUrl(p, ent.kind);
+    }
+  }
+  function trackLive(p, kind) {
+    liveThumbOrder.push({ id: p.id, kind: kind });
+    trimLiveThumbs();
+  }
+  /** kind: "thumb" (256 finish) | "display" (720 result cards — never falls back to 256) */
+  function ensureThumbUrl(p, kind) {
+    if (!p) return "";
+    kind = kind || "thumb";
+    if (kind === "display") {
+      if (p.displayUrl) return p.displayUrl;
+      if (p.displayBlob) {
+        p.displayUrl = URL.createObjectURL(p.displayBlob);
+        trackDisplayLive(p);
+        return p.displayUrl;
+      }
+      return ""; // do NOT upscale 256 onto result cards
+    }
+    if (p.thumbUrl) return p.thumbUrl;
+    if (p.thumbBlob) {
+      p.thumbUrl = URL.createObjectURL(p.thumbBlob);
+      trackLive(p, "thumb");
+      return p.thumbUrl;
+    }
+    return "";
+  }
+  function trackDisplayLive(p) {
+    if (!p) return;
+    for (let i = displayLiveOrder.length - 1; i >= 0; i--) {
+      if (displayLiveOrder[i].id === p.id) displayLiveOrder.splice(i, 1);
+    }
+    displayLiveOrder.push({ id: p.id });
+    while (displayLiveOrder.length > DISPLAY_LIVE_CAP) {
+      const ent = displayLiveOrder.shift();
+      const op = photos.find(function (x) { return x.id === ent.id; });
+      if (op) revokeOneUrl(op, "display");
+    }
+  }
+  function hasOriginalFile(p) {
+    return !!(p && p.file && typeof p.file.size === "number");
+  }
+  function needsReselectForDisplay(p) {
+    return !!(p && p.analyzed && !p.displayBlob && !hasOriginalFile(p));
+  }
+  /** Bound queue: keep at most DISPLAY_LIVE_CAP pending+inflight display jobs. */
+  function enqueueDisplayEncode(item, img) {
+    if (!item || !hasOriginalFile(item)) return;
+    if (item.displayBlob || item._displayEncP) {
+      if (item._displayEncP) item._displayEncP.then(function () { applyDisplayToImg(item, img); });
+      else applyDisplayToImg(item, img);
+      return;
+    }
+    // Drop oldest queued (not inflight) if over cap
+    for (let qi = displayEncodeQueue.length - 1; qi >= 0; qi--) {
+      const q = displayEncodeQueue[qi];
+      if (q.item === item || q.img === img) displayEncodeQueue.splice(qi, 1);
+    }
+    displayEncodeQueue.push({ item: item, img: img });
+    while (displayEncodeQueue.length + displayEncodeInflight > DISPLAY_LIVE_CAP) {
+      displayEncodeQueue.shift();
+    }
+    pumpDisplayEncode();
+  }
+  function pumpDisplayEncode() {
+    while (displayEncodeInflight < DISPLAY_ENC_CONCURRENCY && displayEncodeQueue.length) {
+      const job = displayEncodeQueue.shift();
+      const item = job.item;
+      const img = job.img;
+      if (!item || item.displayBlob) {
+        applyDisplayToImg(item, img);
+        continue;
+      }
+      if (!hasOriginalFile(item)) {
+        markReselectPlaceholder(img);
+        continue;
+      }
+      displayEncodeInflight++;
+      item._displayEncP = jpegViaWorkerFromBlob(item.file, 0.62, DISPLAY_MAX).then(function (blob) {
+        item.displayBlob = blob || null;
+        item.displayUrl = null;
+        item._displayEncP = null;
+        displayEncodeInflight--;
+        if (item.displayBlob) {
+          // Opportunistic IDB update (non-blocking)
+          try { persistDisplayBlob(item); } catch (_) {}
+          applyDisplayToImg(item, img);
+        } else if (img) {
+          markReselectPlaceholder(img);
+        }
+        pumpDisplayEncode();
+      }).catch(function () {
+        item._displayEncP = null;
+        displayEncodeInflight--;
+        pumpDisplayEncode();
+      });
+    }
+  }
+  function persistDisplayBlob(p) {
+    if (!p || !p.id || !p.displayBlob || !p.hash) return;
+    idbGet(p.id).then(function (prev) {
+      const base = prev || { choice: p.choice, userTouched: !!p.userTouched, ts: Date.now() };
+      const analysis = (base.analysis && base.analysis.v === ANALYSIS_VERSION) ? base.analysis : {
+        v: ANALYSIS_VERSION, sharp: p.sharp, mean: p.mean, overPct: p.overPct, underPct: p.underPct,
+        grayStd: p.grayStd, edgeEnergy: p.edgeEnergy, flat: !!p.flat,
+        hash: p.hash, aHash: p.aHash, thumbBlob: p.thumbBlob,
+        captureMs: p.captureMs, dateSource: p.dateSource,
+      };
+      analysis.displayBlob = p.displayBlob;
+      analysis.thumbBlob = p.thumbBlob || analysis.thumbBlob;
+      return idbSet(p.id, {
+        choice: p.choice, userTouched: !!p.userTouched, ts: Date.now(), analysis: analysis,
+      });
+    }).catch(function () {});
+  }
+  function markReselectPlaceholder(img) {
+    if (!img) return;
+    const ph = img.parentElement && img.parentElement.querySelector(".thumb-placeholder");
+    if (ph) {
+      ph.textContent = "請重新選取照片以載入清晰預覽";
+      ph.classList.add("reselect");
+      ph.classList.remove("hidden");
+    }
+    img.removeAttribute("src");
+    img.classList.remove("is-ready");
+    img.setAttribute("data-reselect", "1");
+  }
+  function applyDisplayToImg(p, img) {
+    if (!p || !img) return;
+    const url = ensureThumbUrl(p, "display");
+    if (!url) {
+      if (needsReselectForDisplay(p)) markReselectPlaceholder(img);
+      return;
+    }
+    const ph = img.parentElement && img.parentElement.querySelector(".thumb-placeholder");
+    function show() {
+      img.classList.add("is-ready");
+      img.setAttribute("data-loaded", "1");
+      img.setAttribute("data-nw", String(img.naturalWidth || ""));
+      if (ph) ph.classList.add("hidden");
+    }
+    if (img.src === url && img.complete && img.naturalWidth) { show(); return; }
+    img.classList.remove("is-ready");
+    img.onload = function () { show(); };
+    img.src = url;
+  }
+  function revealResultCardImg(img) {
+    if (!img || img.getAttribute("data-loaded") === "1") return;
+    const pid = img.getAttribute("data-pid");
+    const pp = photos.find(function (x) { return x.id === pid; });
+    if (!pp) return;
+    if (pp.displayBlob) {
+      applyDisplayToImg(pp, img);
+      return;
+    }
+    if (hasOriginalFile(pp)) {
+      enqueueDisplayEncode(pp, img);
+      return;
+    }
+    markReselectPlaceholder(img);
   }
   function toGray(data) {
     const g = new Float32Array(data.length / 4);
@@ -700,7 +1158,7 @@
   }
   function dHash(ctx, w, h) {
     const c = document.createElement("canvas"); c.width = 9; c.height = 8;
-    const x = c.getContext("2d", { willReadFrequently: true });
+    const x = c.getContext("2d", { willReadFrequently: true, alpha: false });
     x.drawImage(ctx.canvas, 0, 0, w, h, 0, 0, 9, 8);
     const data = x.getImageData(0, 0, 9, 8).data;
     let bits = "";
@@ -716,7 +1174,7 @@
   }
   function aHash(ctx, w, h) {
     const c = document.createElement("canvas"); c.width = 8; c.height = 8;
-    const x = c.getContext("2d", { willReadFrequently: true });
+    const x = c.getContext("2d", { willReadFrequently: true, alpha: false });
     x.drawImage(ctx.canvas, 0, 0, w, h, 0, 0, 8, 8);
     const data = x.getImageData(0, 0, 8, 8).data;
     const gray = []; let sum = 0;
@@ -739,6 +1197,7 @@
     return p.sharp - Math.abs(p.mean - 120) * 0.5 - p.overPct - p.underPct * 0.5;
   }
   function yieldToUI() { return new Promise(function (r) { setTimeout(r, 0); }); }
+  function yieldPaint() { return yieldToUI(); }
 
   const workerCode = `
     function toGray(data) {
@@ -809,6 +1268,101 @@
     } catch (err) { metricWorker = null; }
     return metricWorker;
   }
+  const encodeWorkerCode = `
+    self.onmessage = async function (e) {
+      var id = e.data.id, quality = e.data.quality || 0.7, maxSide = e.data.maxSide || 0;
+      var bitmap = e.data.bitmap || null;
+      try {
+        if (!bitmap && e.data.blob) {
+          // DISPLAY-ONLY decode in worker (parallel with main-thread HTML Image analysis)
+          bitmap = await createImageBitmap(e.data.blob);
+        }
+        var w = bitmap.width, h = bitmap.height;
+        if (maxSide > 0) {
+          var scale = Math.min(1, maxSide / Math.max(w, h));
+          w = Math.max(1, Math.round(w * scale));
+          h = Math.max(1, Math.round(h * scale));
+        }
+        var oc = new OffscreenCanvas(w, h);
+        oc.getContext("2d", { alpha: false }).drawImage(bitmap, 0, 0, w, h);
+        try { bitmap.close(); } catch (_) {}
+        var blob = await oc.convertToBlob({ type: "image/jpeg", quality: quality });
+        oc.width = 1; oc.height = 1;
+        self.postMessage({ id: id, blob: blob });
+      } catch (err) {
+        try { if (bitmap) bitmap.close(); } catch (_) {}
+        self.postMessage({ id: id, blob: null, error: String(err) });
+      }
+    };
+  `;
+  let encodeWorkers = null, encodeRr = 0, encodeReqId = 0;
+  const encodeWaiters = {};
+  const ENCODE_POOL = 6;
+  function ensureEncodeWorkers() {
+    if (encodeWorkers && encodeWorkers.length) return encodeWorkers;
+    try {
+      if (typeof OffscreenCanvas !== "function") return null;
+      const url = URL.createObjectURL(new Blob([encodeWorkerCode], { type: "text/javascript" }));
+      encodeWorkers = [];
+      for (let i = 0; i < ENCODE_POOL; i++) {
+        const worker = new Worker(url);
+        worker.onmessage = function (e) {
+          const waiter = encodeWaiters[e.data.id];
+          if (waiter) { delete encodeWaiters[e.data.id]; waiter(e.data.blob || null); }
+        };
+        encodeWorkers.push(worker);
+      }
+      return encodeWorkers;
+    } catch (err) { encodeWorkers = null; return null; }
+  }
+  function getEncodeWorker() {
+    const pool = ensureEncodeWorkers();
+    return pool ? pool[0] : null;
+  }
+  function getEncodeWorkerRoundRobin() {
+    const pool = ensureEncodeWorkers();
+    if (!pool || !pool.length) return null;
+    const pick = pool[encodeRr % pool.length];
+    encodeRr++;
+    return pick;
+  }
+  function jpegViaWorkerFromBlob(blob, quality, maxSide) {
+    const worker = getEncodeWorkerRoundRobin();
+    if (!worker) return Promise.resolve(null);
+    const id = ++encodeReqId;
+    return new Promise(function (resolve) {
+      encodeWaiters[id] = resolve;
+      try {
+        worker.postMessage({ id: id, blob: blob, quality: quality, maxSide: maxSide || 0 });
+      } catch (err) {
+        delete encodeWaiters[id];
+        resolve(null);
+      }
+    });
+  }
+
+
+  function jpegViaWorkerFromCanvas(canvas, quality) {
+    const worker = (typeof getEncodeWorkerRoundRobin === "function" ? getEncodeWorkerRoundRobin() : getEncodeWorker());
+    if (!worker || typeof createImageBitmap !== "function") {
+      return canvasToJpegBlob(canvas, quality);
+    }
+    return createImageBitmap(canvas).then(function (bmp) {
+      const id = ++encodeReqId;
+      return new Promise(function (resolve) {
+        encodeWaiters[id] = function (data) {
+          resolve(data && typeof data === "object" && "blob" in data ? data.blob : data);
+        };
+        try {
+          worker.postMessage({ id: id, bitmap: bmp, quality: quality }, [bmp]);
+        } catch (err) {
+          delete encodeWaiters[id];
+          canvasToJpegBlob(canvas, quality).then(resolve);
+        }
+      });
+    });
+  }
+
   function metricsViaWorker(imageData, w, h) {
     const worker = getMetricWorker();
     if (!worker) {
@@ -821,20 +1375,30 @@
     const id = ++workerReqId;
     return new Promise(function (resolve) {
       workerWaiters[id] = { resolve: resolve };
-      const copy = imageData.data.buffer.slice(0);
-      worker.postMessage({ id: id, buffer: copy, w: w, h: h }, [copy]);
+      const buf = imageData.data.buffer;
+      try {
+        worker.postMessage({ id: id, buffer: buf, w: w, h: h }, [buf]);
+      } catch (_) {
+        const copy = buf.slice(0);
+        worker.postMessage({ id: id, buffer: copy, w: w, h: h }, [copy]);
+      }
     });
   }
 
   function applyCachedAnalysis(item, saved) {
     if (!saved || !saved.analysis) return false;
     const a = saved.analysis;
-    if (!a || a.v !== ANALYSIS_VERSION || typeof a.sharp !== "number" || !a.hash || !a.thumbUrl) return false;
+    // v9 only — rejects v≤8 so stale v7/v8 labels/display shapes are never reused
+    if (!a || a.v !== ANALYSIS_VERSION || typeof a.sharp !== "number" || !a.hash) return false;
+    if (!a.thumbBlob) return false;
     item.sharp = a.sharp; item.mean = a.mean; item.overPct = a.overPct; item.underPct = a.underPct;
     item.grayStd = typeof a.grayStd === "number" ? a.grayStd : 0;
     item.edgeEnergy = typeof a.edgeEnergy === "number" ? a.edgeEnergy : Math.sqrt(Math.max(0, item.sharp));
     item.flat = !!a.flat || (item.grayStd < 12 && item.edgeEnergy < 18);
-    item.hash = a.hash; item.aHash = a.aHash; item.thumbUrl = a.thumbUrl;
+    item.hash = a.hash; item.aHash = a.aHash;
+    item.thumbBlob = a.thumbBlob;
+    item.displayBlob = a.displayBlob || null; // optional (lazy 720 may be absent)
+    item.thumbUrl = null; item.displayUrl = null;
     item.captureMs = typeof a.captureMs === "number" ? a.captureMs : item.lastModified;
     item.dateSource = a.dateSource === "exif" ? "exif" : "file";
     item.analyzed = true; item.fromCache = true;
@@ -907,6 +1471,29 @@
     } catch (_) {}
     return null;
   }
+  function parseJpegSize(buf) {
+    try {
+      const v = new DataView(buf);
+      if (v.byteLength < 4 || v.getUint16(0) !== 0xFFD8) return null;
+      let off = 2;
+      while (off + 9 < v.byteLength) {
+        if (v.getUint8(off) !== 0xFF) { off++; continue; }
+        const marker = v.getUint8(off + 1);
+        if (marker === 0xD9 || marker === 0xDA) break;
+        const len = v.getUint16(off + 2);
+        if (len < 2) break;
+        // SOF0..SOF3, SOF5..SOF7, SOF9..SOF11, SOF13..SOF15
+        if ((marker >= 0xC0 && marker <= 0xC3) || (marker >= 0xC5 && marker <= 0xC7) ||
+            (marker >= 0xC9 && marker <= 0xCB) || (marker >= 0xCD && marker <= 0xCF)) {
+          const h = v.getUint16(off + 5);
+          const w = v.getUint16(off + 7);
+          if (w > 0 && h > 0) return { w: w, h: h };
+        }
+        off += 2 + len;
+      }
+    } catch (_) {}
+    return null;
+  }
   async function readCaptureDate(file) {
     try {
       const slice = file.slice(0, Math.min(file.size, 128 * 1024));
@@ -917,26 +1504,85 @@
     return { ms: file.lastModified, source: "file" };
   }
 
+  const _canvasPool = [];
+  function acquireCanvas() {
+    return _canvasPool.pop() || document.createElement("canvas");
+  }
+  function releaseCanvas(c) {
+    if (!c) return;
+    c.width = 1; c.height = 1;
+    if (_canvasPool.length < 24) _canvasPool.push(c);
+  }
+  function drawOnto(canvas, ctx, img, maxSide) {
+    const sw = img.naturalWidth || img.width;
+    const sh = img.naturalHeight || img.height;
+    const scale = Math.min(1, maxSide / Math.max(sw, sh));
+    const w = Math.max(1, Math.round(sw * scale));
+    const h = Math.max(1, Math.round(sh * scale));
+    canvas.width = w; canvas.height = h;
+    ctx.drawImage(img, 0, 0, w, h);
+    return { w: w, h: h };
+  }
   async function analyzeOne(item) {
-    const cap = await readCaptureDate(item.file);
+    /**
+     * ANALYSIS DECODE — DO NOT REPLACE with createImageBitmap (or any other resize decoder).
+     * createImageBitmap(file) then drawImage-to-512 changes perceptual hashes by ~18–35 bits vs
+     * v5's HTML Image → canvas@512 path, which caused ~388 keep/delete label flips in v6/v7.
+     * Always: loadImageFromFile (HTML Image + img.decode) → drawImage at ANALYZE_MAX (512).
+     * v8d: cold path encodes ONLY the 256 finish thumb from this canvas. Result-card 720 JPEGs
+     * are produced lazily near the viewport (never feed hashes).
+     */
+    const capP = readCaptureDate(item.file);
+    const img = await loadImageFromFile(item.file);
+    const cap = await capP;
     item.captureMs = cap.ms;
     item.dateSource = cap.source;
-    const img = await loadImageFromFile(item.file);
-    const thumb = drawThumb(img, THUMB_MAX);
-    img.src = "";
-    const imageData = thumb.ctx.getImageData(0, 0, thumb.w, thumb.h);
-    const metrics = await metricsViaWorker(imageData, thumb.w, thumb.h);
-    item.sharp = metrics.sharp; item.mean = metrics.mean;
-    item.grayStd = typeof metrics.std === "number" ? metrics.std : 0;
-    item.edgeEnergy = typeof metrics.edgeEnergy === "number" ? metrics.edgeEnergy : Math.sqrt(Math.max(0, item.sharp));
-    item.flat = item.grayStd < 12 && item.edgeEnergy < 18;
-    item.overPct = metrics.overPct; item.underPct = metrics.underPct;
-    if (metrics.hash && metrics.aHash) { item.hash = metrics.hash; item.aHash = metrics.aHash; }
-    else { item.hash = dHash(thumb.ctx, thumb.w, thumb.h); item.aHash = aHash(thumb.ctx, thumb.w, thumb.h); }
-    item.thumbUrl = thumb.canvas.toDataURL("image/jpeg", 0.55);
-    item.analyzed = true; item.fromCache = false;
-    thumb.canvas.width = 0; thumb.canvas.height = 0;
+    const analyzeCanvas = acquireCanvas();
+    const analyzeCtx = analyzeCanvas.getContext("2d", { willReadFrequently: true, alpha: false });
+    try {
+      const analyzed = drawOnto(analyzeCanvas, analyzeCtx, img, ANALYZE_MAX);
+      try { img.src = ""; img.removeAttribute("src"); } catch (_) {}
+      await yieldToUI();
+      const imageData = analyzeCtx.getImageData(0, 0, analyzed.w, analyzed.h);
+      const metricsP = metricsViaWorker(imageData, analyzed.w, analyzed.h);
+
+      const tScale = Math.min(1, THUMB_MAX / Math.max(analyzed.w, analyzed.h));
+      const tw = Math.max(1, Math.round(analyzed.w * tScale));
+      const th = Math.max(1, Math.round(analyzed.h * tScale));
+      const thumbCanvas = acquireCanvas();
+      thumbCanvas.width = tw; thumbCanvas.height = th;
+      thumbCanvas.getContext("2d", { alpha: false }).drawImage(analyzeCanvas, 0, 0, tw, th);
+      const thumbP = canvasToJpegBlob(thumbCanvas, 0.55);
+
+      const metrics = await metricsP;
+      item.sharp = metrics.sharp; item.mean = metrics.mean;
+      item.grayStd = typeof metrics.std === "number" ? metrics.std : 0;
+      item.edgeEnergy = typeof metrics.edgeEnergy === "number" ? metrics.edgeEnergy : Math.sqrt(Math.max(0, item.sharp));
+      item.flat = item.grayStd < 12 && item.edgeEnergy < 18;
+      item.overPct = metrics.overPct; item.underPct = metrics.underPct;
+      if (metrics.hash && metrics.aHash) {
+        item.hash = metrics.hash; item.aHash = metrics.aHash;
+      } else {
+        item.hash = ""; item.aHash = "";
+      }
+
+      item.displayBlob = null;
+      item.displayUrl = null;
+      item._blobP = thumbP.then(function (blob) {
+        item.thumbBlob = blob;
+        item.thumbUrl = null;
+        releaseCanvas(thumbCanvas);
+      });
+      item.analyzed = true; item.fromCache = false;
+    } catch (err) {
+      try { img.src = ""; img.removeAttribute("src"); } catch (_) {}
+      throw err;
+    } finally {
+      try { img.src = ""; img.removeAttribute("src"); } catch (_) {}
+      releaseCanvas(analyzeCanvas);
+    }
   }
+
 
   function thresholds() {
     return {
@@ -966,9 +1612,11 @@
     const under = p.mean <= 45 || p.underPct >= th.underTh;
     const flat = isFlatCandidate(p, th);
     const best = typeof p.groupBestSharp === "number" ? p.groupBestSharp : 0;
-    // Exposure wins over flat/blur labeling
+    // Absolute blur: flat/monotone texture suppresses (true solids are not "blur")
     const blurAbs = !over && !under && !flat && p.sharp < th.sharpTh;
-    const blurRel = !over && !under && !flat && best > th.sharpTh * 0.5 && p.sharp < best * 0.42;
+    // Relative blur vs group best: do NOT let flat suppress — severe blur of a real photo
+    // can look low-texture but must still be 「同組較模糊」 when grouped with a sharp peer
+    const blurRel = !over && !under && best > th.sharpTh * 0.5 && p.sharp < best * 0.42;
     const blur = blurAbs || blurRel;
     const bad = over || under || blur; // flat alone is NOT bad
     return { blur: blur, flat: flat, over: over, under: under, bad: bad };
@@ -1011,7 +1659,8 @@
       // Non-best deleted: duplicate reason takes priority over 畫面單調
       if (p.choice === "delete") {
         if (exp) return exp;
-        if (q.blur) return (p.sharp < th.sharpTh) ? "模糊" : "同組較模糊";
+        // In a multi-photo group, relative/absolute blur → 「同組較模糊」(not lone 「模糊」)
+        if (q.blur) return "同組較模糊";
         return "與同組重複";
       }
       // Non-best but manually/kept
@@ -1028,21 +1677,72 @@
     return "你手動刪除";
   }
 
+  /**
+   * Truly textureless / near-uniform candidate (solid_gray/blue, e_exif6, flats).
+   * Severe blurs can also look low-edge — they must NOT skip grouping if hash-similar
+   * to another photo (see shouldSkipGrouping).
+   */
+  function isMonotoneSolid(p) {
+    if (!p) return false;
+    const edge = typeof p.edgeEnergy === "number" ? p.edgeEnergy : Math.sqrt(Math.max(0, p.sharp || 0));
+    const std = typeof p.grayStd === "number" ? p.grayStd : 99;
+    if (std < 6 && edge < 10) return true;
+    if (edge < 4 && std < 15) return true;
+    return false;
+  }
+  function isSimilarPair(a, b, th) {
+    const dist = hashDistance(a, b);
+    const timeOk = Math.abs(photoTime(a) - photoTime(b)) <= th.timeTh;
+    return dist <= 4 || (timeOk && dist <= th.hashTh);
+  }
+  /**
+   * Skip grouping only when textureless AND not similar to any non-monotone image.
+   * Similar-to-another-solid does not count — true solids stay singleton 「畫面單調」.
+   * Similar-to-a-real-photo (e.g. severe blur ↔ sharp) keeps the blur in grouping.
+   */
+  function shouldSkipGrouping(p, all, th) {
+    if (!isMonotoneSolid(p)) return false;
+    for (let i = 0; i < all.length; i++) {
+      const o = all[i];
+      if (o === p) continue;
+      if (isMonotoneSolid(o)) continue;
+      if (isSimilarPair(p, o, th)) return false;
+    }
+    return true;
+  }
+
   function recomputeGroupsAndLabels() {
     const th = thresholds();
     const analyzed = photos.filter(function (p) { return p.analyzed; });
     analyzed.forEach(function (p) { p.groupId = null; p.isBest = false; });
+    // Precompute skip flags ONCE. Calling skip scans inside O(n²) caused ~27M hash compares
+    // on qa1000 (≈22s). Same semantics as shouldSkipGrouping, O(solids×nonSolids) once.
+    const mono = analyzed.map(function (p) { return isMonotoneSolid(p); });
+    const nonMonoIdx = [];
+    for (let i = 0; i < analyzed.length; i++) if (!mono[i]) nonMonoIdx.push(i);
+    const skipGroup = new Array(analyzed.length);
+    for (let i = 0; i < analyzed.length; i++) {
+      if (!mono[i]) { skipGroup[i] = false; continue; }
+      let skip = true;
+      const p = analyzed[i];
+      for (let k = 0; k < nonMonoIdx.length; k++) {
+        const o = analyzed[nonMonoIdx[k]];
+        if (o === p) continue;
+        if (isSimilarPair(p, o, th)) { skip = false; break; }
+      }
+      skipGroup[i] = skip;
+    }
     let gid = 0;
     for (let i = 0; i < analyzed.length; i++) {
       const a = analyzed[i];
       if (a.groupId != null) continue;
       a.groupId = gid;
+      if (skipGroup[i]) { gid++; continue; }
       for (let j = i + 1; j < analyzed.length; j++) {
         const b = analyzed[j];
         if (b.groupId != null) continue;
-        const dist = hashDistance(a, b);
-        const timeOk = Math.abs(photoTime(a) - photoTime(b)) <= th.timeTh;
-        if (dist <= 4 || (timeOk && dist <= th.hashTh)) b.groupId = gid;
+        if (skipGroup[j]) continue;
+        if (isSimilarPair(a, b, th)) b.groupId = gid;
       }
       gid++;
     }
@@ -1051,24 +1751,25 @@
       if (!byGroup[p.groupId]) byGroup[p.groupId] = [];
       byGroup[p.groupId].push(p);
     });
-    Object.keys(byGroup).forEach(function (k) {
-      const g = byGroup[k];
+    const gkeys = Object.keys(byGroup);
+    for (let gi = 0; gi < gkeys.length; gi++) {
+      const g = byGroup[gkeys[gi]];
       g.sort(function (a, b) { return qualityScore(b) - qualityScore(a); });
       g[0].isBest = true;
       const bestSharp = Math.max.apply(null, g.map(function (x) { return x.sharp; }));
       g.forEach(function (x) { x.groupBestSharp = bestSharp; });
-    });
-    analyzed.forEach(function (p) {
+    }
+    for (let i = 0; i < analyzed.length; i++) {
+      const p = analyzed[i];
       const g = byGroup[p.groupId] || [p];
       p.groupSize = g.length;
-      // autoChoice first (uses flat/blur), then reason uses autoChoice for manual strings
       p.autoChoice = autoChoiceFor(p, g.length, th);
       if (!p.userTouched) p.choice = p.autoChoice;
       const q = isBadQuality(p, th);
       p.badQuality = q.bad;
       p.suggestDelete = p.choice === "delete";
       p.reason = computeReason(p, g.length, th);
-    });
+    }
   }
 
   async function persistChoice(p) {
@@ -1077,11 +1778,13 @@
       choice: p.choice, userTouched: !!p.userTouched, ts: Date.now(),
       analysis: prev.analysis || null,
     };
-    if (p.analyzed && p.thumbUrl && p.hash) {
+    if (p.analyzed && p.hash && p.thumbBlob) {
       payload.analysis = {
         v: ANALYSIS_VERSION, sharp: p.sharp, mean: p.mean, overPct: p.overPct, underPct: p.underPct,
         grayStd: p.grayStd, edgeEnergy: p.edgeEnergy, flat: !!p.flat,
-        hash: p.hash, aHash: p.aHash, thumbUrl: p.thumbUrl, captureMs: p.captureMs, dateSource: p.dateSource,
+        hash: p.hash, aHash: p.aHash,
+        thumbBlob: p.thumbBlob, displayBlob: p.displayBlob,
+        captureMs: p.captureMs, dateSource: p.dateSource,
       };
     }
     await idbSet(p.id, payload);
@@ -1276,24 +1979,25 @@
       : "";
     if (compact) {
       return (
-        '<article class="' + cls.join(" ") + '" data-id="' + escapeAttr(p.id) + '">' +
+        '<article class="' + cls.join(" ") + '" data-id="' + escapeAttr(p.id) + '" tabindex="-1">' +
           '<div class="thumb-wrap">' +
-            '<span class="thumb-placeholder"></span>' +
-            '<img data-src="' + (p.thumbUrl ? escapeAttr(p.thumbUrl) : "") + '" alt="" />' +
+            '<span class="thumb-placeholder" aria-hidden="true"></span>' +
+            '<img data-pid="' + escapeAttr(p.id) + '" data-kind="display" alt="" width="720" height="540" />' +
             '<span class="choice-badge ' + badgeCls + '">' + badgeText + "</span>" +
           "</div>" +
           '<div class="meta meta-compact">' +
             '<div class="reason">' + escapeHtml(p.reason || "") + "</div>" +
             switchHtml + restoreHtml +
+            '<button type="button" class="btn-view-full" data-act="view">看大圖</button>' +
           "</div>" +
         "</article>"
       );
     }
     return (
-      '<article class="' + cls.join(" ") + '" data-id="' + escapeAttr(p.id) + '">' +
+      '<article class="' + cls.join(" ") + '" data-id="' + escapeAttr(p.id) + '" tabindex="-1">' +
         '<div class="thumb-wrap">' +
-          '<span class="thumb-placeholder">載入中…</span>' +
-          '<img data-src="' + (p.thumbUrl ? escapeAttr(p.thumbUrl) : "") + '" alt="" />' +
+          '<span class="thumb-placeholder" aria-hidden="true"></span>' +
+          '<img data-pid="' + escapeAttr(p.id) + '" data-kind="display" alt="" width="720" height="540" />' +
           '<span class="choice-badge ' + badgeCls + '">' + badgeText + "</span>" +
           (tags.length ? '<div class="tag-row">' + tags.join("") + "</div>" : "") +
         "</div>" +
@@ -1302,6 +2006,7 @@
           '<div class="reason">' + escapeHtml(p.reason || "") + "</div>" +
           '<div class="scores">清晰度 ' + Math.round(p.sharp) + " · 亮度 " + Math.round(p.mean) + "</div>" +
           '<div class="card-controls">' + switchHtml + restoreHtml + "</div>" +
+          '<button type="button" class="btn-view-full" data-act="view">看大圖</button>' +
         "</div>" +
       "</article>"
     );
@@ -1309,34 +2014,22 @@
 
   function setupLazyThumbs(root) {
     if (thumbObserver) thumbObserver.disconnect();
-    const imgs = root.querySelectorAll("img[data-src]");
+    const imgs = root.querySelectorAll("img[data-pid][data-kind=\"display\"]");
+    function reveal(img) {
+      revealResultCardImg(img);
+      // Keep observing until loaded so a recycled placeholder can retry; unobserve when ready
+      if (img.getAttribute("data-loaded") === "1" && thumbObserver) thumbObserver.unobserve(img);
+    }
     if (!("IntersectionObserver" in window)) {
-      imgs.forEach(function (img) {
-        if (img.getAttribute("data-src")) {
-          img.src = img.getAttribute("data-src");
-          img.removeAttribute("data-src");
-          const ph = img.parentElement && img.parentElement.querySelector(".thumb-placeholder");
-          if (ph) ph.remove();
-        }
-      });
+      imgs.forEach(reveal);
       return;
     }
     thumbObserver = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (!entry.isIntersecting) return;
-        const img = entry.target;
-        const src = img.getAttribute("data-src");
-        if (src) {
-          img.src = src;
-          img.removeAttribute("data-src");
-          img.onload = function () {
-            const ph = img.parentElement && img.parentElement.querySelector(".thumb-placeholder");
-            if (ph) ph.remove();
-          };
-        }
-        thumbObserver.unobserve(img);
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        reveal(en.target);
       });
-    }, { rootMargin: "120px 0px", threshold: 0.01 });
+    }, { rootMargin: "240px 0px", threshold: 0.01 });
     imgs.forEach(function (img) { thumbObserver.observe(img); });
   }
 
@@ -1362,6 +2055,23 @@
     if (mode === "result") el.progressBlock.classList.add("hidden");
   }
 
+  function groupBlockHtml(g) {
+    const others = g.photos.filter(function (p) { return p !== g.best; });
+    const open = !!expandedGroups[g.gid];
+    let html = '<div class="group-block" data-gid="' + g.gid + '">' + cardHtml(g.best);
+    if (others.length) {
+      const label = open
+        ? ("收合 " + others.length + " 張同組照片")
+        : ("展開 " + others.length + " 張同組照片");
+      html += '<button type="button" class="expand-btn' + (open ? " open" : "") + '" data-expand="' + g.gid + '">' +
+        '<span class="expand-label">' + label + "</span>" +
+        '<span class="chevron" aria-hidden="true"></span></button>';
+      html += '<div class="group-extras' + (open ? "" : " hidden") + '" data-extras="' + g.gid + '">' +
+        others.map(function (p) { return cardHtml(p, { compact: true }); }).join("") + "</div>";
+    }
+    html += "</div>";
+    return html;
+  }
   function renderResult() {
     const kept = keptPhotos();
     const dels = deletedPhotos();
@@ -1382,43 +2092,83 @@
       el.cards.innerHTML = '<div class="empty">尚無結果</div>';
       return;
     }
-    el.cards.innerHTML = groups.map(function (g) {
-      const others = g.photos.filter(function (p) { return p !== g.best; });
-      const open = !!expandedGroups[g.gid];
-      let html = '<div class="group-block" data-gid="' + g.gid + '">' + cardHtml(g.best);
-      if (others.length) {
-        const label = open
-          ? ("收合 " + others.length + " 張同組照片")
-          : ("展開 " + others.length + " 張同組照片");
-        html += '<button type="button" class="expand-btn' + (open ? " open" : "") + '" data-expand="' + g.gid + '">' +
-          '<span class="expand-label">' + label + "</span>" +
-          '<span class="chevron" aria-hidden="true"></span></button>';
-        html += '<div class="group-extras' + (open ? "" : " hidden") + '" data-extras="' + g.gid + '">' +
-          others.map(function (p) { return cardHtml(p, { compact: true }); }).join("") + "</div>";
-      }
-      html += "</div>";
-      return html;
-    }).join("");
+    // Sync path for small sets / expand toggles; large sets use renderResultChunked
+    if (groups.length <= 40) {
+      el.cards.innerHTML = groups.map(groupBlockHtml).join("");
+      setupLazyThumbs(el.cards);
+    } else {
+      el.cards.innerHTML = groups.slice(0, 20).map(groupBlockHtml).join("");
+      setupLazyThumbs(el.cards);
+      // Fire-and-forget remainder (processFiles awaits renderResultChunked instead)
+      renderResultChunked(groups);
+    }
+  }
+  async function renderResultChunked(groups) {
+    if (!groups) groups = groupsOrdered();
+    el.cards.innerHTML = "";
+    const CHUNK = 25;
+    for (let i = 0; i < groups.length; i += CHUNK) {
+      const slice = groups.slice(i, i + CHUNK);
+      el.cards.insertAdjacentHTML("beforeend", slice.map(groupBlockHtml).join(""));
+      if (i + CHUNK < groups.length) await yieldToUI();
+    }
     setupLazyThumbs(el.cards);
   }
 
   function thumbCellHtml(p, lazy) {
     const hm = formatHmTaipei(photoTime(p));
+    const url = ensureThumbUrl(p, "thumb");
     let img;
-    if (!p.thumbUrl) img = '<img alt="" />';
-    else if (lazy) img = '<img data-src="' + escapeAttr(p.thumbUrl) + '" alt="' + escapeAttr(p.name) + '" />';
-    else img = '<img src="' + escapeAttr(p.thumbUrl) + '" alt="' + escapeAttr(p.name) + '" loading="lazy" />';
+    if (!url) img = '<img alt="" data-pid="' + escapeAttr(p.id) + '" data-kind="thumb" />';
+    else if (lazy) img = '<img data-src="' + escapeAttr(url) + '" data-pid="' + escapeAttr(p.id) + '" data-kind="thumb" alt="' + escapeAttr(p.name) + '" />';
+    else img = '<img src="' + escapeAttr(url) + '" data-pid="' + escapeAttr(p.id) + '" data-kind="thumb" alt="' + escapeAttr(p.name) + '" loading="lazy" />';
     return '<div class="seg-thumb" title="' + escapeAttr(p.name) + '">' + img +
       '<span class="seg-time">' + escapeHtml(hm) + "</span></div>";
   }
+  function hourDividerHtml(hour) {
+    return '<div class="seg-hour-div" role="separator"><span>' +
+      escapeHtml(pad2(hour) + ":00") + "</span></div>";
+  }
+  /** Build seg-grid HTML. When photos.length > 60, insert hour dividers between thumbs. */
+  function buildSegGridHtml(photos, opts) {
+    opts = opts || {};
+    const open = !!opts.open;
+    const showDiv = photos.length > 60;
+    const limit = open ? photos.length : Math.min(6, photos.length);
+    const parts = [];
+    for (let i = 0; i < limit; i++) {
+      if (showDiv && i > 0) {
+        const prevH = hourTaipei(photoTime(photos[i - 1]));
+        const h = hourTaipei(photoTime(photos[i]));
+        if (h !== prevH) parts.push(hourDividerHtml(h));
+      }
+      const lazy = open && i >= 6;
+      parts.push(thumbCellHtml(photos[i], lazy));
+    }
+    if (!open && photos.length > 6) {
+      parts.push('<button type="button" class="more-thumbs-btn" data-more-seg="' +
+        (opts.segIdx != null ? opts.segIdx : "") + '">還有 ' + (photos.length - 6) + " 張</button>");
+    }
+    return parts.join("");
+  }
   let finishThumbObserver = null;
-  const finishFarUrls = new Set();
   function setupFinishLazyThumbs(root) {
     if (finishThumbObserver) finishThumbObserver.disconnect();
-    const imgs = root.querySelectorAll("img[data-src]");
-    if (!imgs.length) return;
+    const imgs = root.querySelectorAll("img[data-src], img[data-pid]");
+    // Revive blob URLs for any data-src that was revoked
+    root.querySelectorAll("img[data-pid]").forEach(function (img) {
+      const pid = img.getAttribute("data-pid");
+      const p = photos.find(function (x) { return x.id === pid; });
+      if (!p) return;
+      const url = ensureThumbUrl(p);
+      if (!url) return;
+      if (img.hasAttribute("data-src")) img.setAttribute("data-src", url);
+      else if (!img.getAttribute("src")) img.setAttribute("data-src", url);
+    });
+    const lazyImgs = root.querySelectorAll("img[data-src]");
+    if (!lazyImgs.length) return;
     if (!("IntersectionObserver" in window)) {
-      imgs.forEach(function (img) {
+      lazyImgs.forEach(function (img) {
         const src = img.getAttribute("data-src");
         if (src) { img.src = src; img.removeAttribute("data-src"); }
       });
@@ -1428,17 +2178,28 @@
       entries.forEach(function (entry) {
         const img = entry.target;
         if (entry.isIntersecting) {
-          const src = img.getAttribute("data-src");
+          const pid = img.getAttribute("data-pid");
+          const p = pid ? photos.find(function (x) { return x.id === pid; }) : null;
+          let src = img.getAttribute("data-src");
+          if (p) src = ensureThumbUrl(p) || src;
           if (src) {
             img.src = src;
             img.removeAttribute("data-src");
-            finishFarUrls.delete(src);
           }
           finishThumbObserver.unobserve(img);
+        } else if (img.src && img.getAttribute("data-pid")) {
+          // Far from viewport: drop decoded src; keep blob via data-pid for revive
+          const pid = img.getAttribute("data-pid");
+          const p = photos.find(function (x) { return x.id === pid; });
+          if (p && p.thumbBlob) {
+            img.removeAttribute("src");
+            img.setAttribute("data-src", ensureThumbUrl(p) || "");
+            // don't revoke here — cap handles it
+          }
         }
       });
     }, { root: null, rootMargin: "240px 0px", threshold: 0.01 });
-    imgs.forEach(function (img) { finishThumbObserver.observe(img); });
+    lazyImgs.forEach(function (img) { finishThumbObserver.observe(img); });
   }
   function buildAmberAlertHtml(opts) {
     opts = opts || {};
@@ -1493,14 +2254,7 @@
     } else {
       el.delSegments.innerHTML = segs.map(function (seg, idx) {
         const open = !!expandedSegThumbs[idx];
-        const initial = seg.photos.slice(0, 6);
-        const rest = seg.photos.slice(6);
-        let thumbs = initial.map(thumbCellHtml).join("");
-        if (open && rest.length) {
-          thumbs += rest.map(function (p) { return thumbCellHtml(p, true); }).join("");
-        } else if (rest.length) {
-          thumbs += '<button type="button" class="more-thumbs-btn" data-more-seg="' + idx + '">還有 ' + rest.length + " 張</button>";
-        }
+        const thumbs = buildSegGridHtml(seg.photos, { open: open, segIdx: idx });
         const titleDate = escapeHtml(seg.dateLabel) + (seg.partLabel ? " · " + escapeHtml(seg.partLabel) : "");
         return (
           '<section class="del-seg" data-seg="' + idx + '">' +
@@ -1558,6 +2312,12 @@
       alert("沒有可讀取的影像檔");
       return;
     }
+    // Revoke prior blob URLs before dropping photo refs
+    photos.forEach(revokeThumbUrl);
+    liveThumbOrder.length = 0;
+    displayLiveOrder.length = 0;
+    displayEncodeQueue.length = 0;
+    displayEncodeInflight = 0;
     photos = [];
     unreadableFiles = [];
     if (el.onlyBadPanel) { el.onlyBadPanel.classList.add("hidden"); el.onlyBadList.innerHTML = ""; }
@@ -1570,6 +2330,8 @@
     el.progressBar.style.width = "0%";
     el.progressText.textContent = "0 / " + files.length + "（0%）";
     getMetricWorker();
+    getEncodeWorker();
+    getEncodeWorker();
 
     const t0 = performance.now();
     let skippedCache = 0, analyzedFresh = 0;
@@ -1583,7 +2345,7 @@
         const item = {
           id: id, file: file, name: file.name, size: file.size, lastModified: file.lastModified,
           captureMs: file.lastModified, dateSource: "file",
-          thumbUrl: null, sharp: 0, mean: 0, grayStd: 0, edgeEnergy: 0, flat: false, overPct: 0, underPct: 0, hash: "", aHash: "",
+          thumbUrl: null, thumbBlob: null, displayUrl: null, displayBlob: null, sharp: 0, mean: 0, grayStd: 0, edgeEnergy: 0, flat: false, overPct: 0, underPct: 0, hash: "", aHash: "",
           groupId: null, isBest: false, choice: "keep", autoChoice: "keep", userTouched: false,
           reason: "", labels: [], suggestDelete: false, badQuality: false, analyzed: false,
           fromCache: false, groupSize: 1,
@@ -1605,12 +2367,16 @@
         else unreadableFiles.push(file.name);
       }));
       const done = Math.min(i + BATCH, files.length);
-      const pct = Math.round((done / files.length) * 100);
-      el.progressBar.style.width = pct + "%";
-      el.progressText.textContent = done + " / " + files.length + "（" + pct + "%）· 快取 " + skippedCache;
-      await yieldToUI();
+      if (done === files.length || (i / BATCH) % 3 === 0) {
+        const left = files.length - done;
+        const pct = Math.round((done / files.length) * 100);
+        el.progressBar.style.width = pct + "%";
+        el.progressText.textContent = done + " / " + files.length + "（" + pct + "%）· 剩餘 " + left +
+          " 張 · 快取 " + skippedCache;
+      }
     }
 
+    await Promise.all(photos.map(function (p) { return p._blobP || Promise.resolve(); }));
     photos.sort(function (a, b) {
       return a.lastModified - b.lastModified || a.name.localeCompare(b.name);
     });
@@ -1625,16 +2391,789 @@
       render();
       return;
     }
+    el.progressText.textContent = "整理分組中… · 剩餘 0 張";
+    await yieldToUI();
+    const persistEarly = (async function () {
+      const entries = [];
+      for (let pi = 0; pi < photos.length; pi++) {
+        const p = photos[pi];
+        if (!p.analyzed || !p.hash || !p.thumbBlob) continue;
+        if (p.fromCache && !p.userTouched && p.choice === p.autoChoice) continue;
+        entries.push({
+          key: p.id,
+          value: {
+            choice: p.choice, userTouched: !!p.userTouched, ts: Date.now(),
+            analysis: {
+              v: ANALYSIS_VERSION, sharp: p.sharp, mean: p.mean, overPct: p.overPct, underPct: p.underPct,
+              grayStd: p.grayStd, edgeEnergy: p.edgeEnergy, flat: !!p.flat,
+              hash: p.hash, aHash: p.aHash,
+              thumbBlob: p.thumbBlob, displayBlob: p.displayBlob || null,
+              captureMs: p.captureMs, dateSource: p.dateSource,
+            },
+          },
+        });
+        if (entries.length >= 25) {
+          await idbSetMany(entries.splice(0, entries.length));
+          await yieldToUI();
+        }
+      }
+      if (entries.length) await idbSetMany(entries);
+    })();
     recomputeGroupsAndLabels();
-    for (const p of photos) { if (p.analyzed) await persistChoice(p); }
+    await persistEarly;
+    while (liveThumbOrder.length > Math.min(LIVE_THUMB_CAP, 20)) {
+      const ent = liveThumbOrder.shift();
+      const op = photos.find(function (x) { return x.id === ent.id; });
+      if (op) revokeOneUrl(op, ent.kind);
+    }
     el.progressText.textContent = "完成 " + photos.length + " 張（100%）· 新分析 " + analyzedFresh +
       " · 快取 " + skippedCache + " · " + (ms / 1000).toFixed(1) + "s";
     if (unreadableFiles.length) {
       el.progressText.textContent += " · 無法讀取 " + unreadableFiles.length;
     }
-    render();
-    processing = false;
+    await yieldToUI();
+    const groups = groupsOrdered();
+    setScreen("result");
+    {
+      const kept = keptPhotos();
+      const dels = deletedPhotos();
+      const total = photos.filter(function (p) { return p.analyzed; }).length;
+      el.summaryCounts.innerHTML =
+        '<span class="c-keep">留 <strong>' + kept.length + "</strong></span>" +
+        '<span class="sep">　</span>' +
+        '<span class="c-del">刪 <strong>' + dels.length + "</strong></span>" +
+        '<span class="sep">　</span>' +
+        '<span class="c-total">共 <strong>' + total + "</strong></span>";
+      const hintDismissed = localStorage.getItem(HINT_KEY) === "1";
+      if (el.resultHint) el.resultHint.classList.toggle("hidden", hintDismissed);
+      renderAmberAlerts("result");
+    }
+    if (groups.length <= 30) {
+      el.cards.innerHTML = groups.map(groupBlockHtml).join("");
+      setupLazyThumbs(el.cards);
+      processing = false;
+    } else {
+      el.cards.innerHTML = groups.slice(0, 24).map(groupBlockHtml).join("");
+      setupLazyThumbs(el.cards);
+      processing = false;
+      (async function () {
+        const CHUNK = 12;
+        for (let gi = 24; gi < groups.length; gi += CHUNK) {
+          el.cards.insertAdjacentHTML("beforeend", groups.slice(gi, gi + CHUNK).map(groupBlockHtml).join(""));
+          await yieldToUI();
+        }
+        setupLazyThumbs(el.cards);
+      })().catch(function () {});
+    }
   }
+
+  /* ========== Full-image viewer (v8e) ========== */
+  const viewer = {
+    open: false,
+    index: 0,
+    list: [],
+    preferGroup: false,
+    gid: null,
+    scrollY: 0,
+    focusId: null,
+    urls: {},
+    loadingId: null,
+    scale: 1,
+    tx: 0,
+    ty: 0,
+    maxScale: 4,
+  };
+
+  const vel = {
+    root: document.getElementById("viewer"),
+    img: document.getElementById("viewerImg"),
+    ph: document.getElementById("viewerPh"),
+    count: document.getElementById("viewerCount"),
+    reason: document.getElementById("viewerReason"),
+    manual: document.getElementById("viewerManual"),
+    keep: document.getElementById("viewerKeep"),
+    del: document.getElementById("viewerDel"),
+    restore: document.getElementById("viewerRestore"),
+    close: document.getElementById("viewerClose"),
+    prev: document.getElementById("viewerPrev"),
+    next: document.getElementById("viewerNext"),
+    stage: document.getElementById("viewerStage"),
+    backdrop: document.getElementById("viewerBackdrop"),
+    frame: document.getElementById("viewerFrame"),
+  };
+
+  function resultListOrder() {
+    const groups = groupsOrdered();
+    const out = [];
+    groups.forEach(function (g) {
+      out.push(g.best);
+      g.photos.forEach(function (p) {
+        if (p !== g.best) out.push(p);
+      });
+    });
+    return out;
+  }
+
+  function buildViewerList(opts) {
+    opts = opts || {};
+    if (opts.preferGroup && opts.gid != null) {
+      const g = groupsOrdered().find(function (x) { return x.gid === opts.gid; });
+      if (g && g.photos && g.photos.length) {
+        return [g.best].concat(g.photos.filter(function (p) { return p !== g.best; }));
+      }
+    }
+    return resultListOrder();
+  }
+
+  function revokeViewerUrl(id) {
+    const u = viewer.urls[id];
+    if (u) {
+      try { URL.revokeObjectURL(u); } catch (_) {}
+      delete viewer.urls[id];
+    }
+  }
+
+  function revokeFarViewerUrls() {
+    const keep = {};
+    for (let d = -1; d <= 1; d++) {
+      const p = viewer.list[viewer.index + d];
+      if (p) keep[p.id] = true;
+    }
+    Object.keys(viewer.urls).forEach(function (id) {
+      if (!keep[id]) revokeViewerUrl(id);
+    });
+  }
+
+  function originalUrlFor(p) {
+    if (!p || !hasOriginalFile(p)) return null;
+    if (viewer.urls[p.id]) return viewer.urls[p.id];
+    const u = URL.createObjectURL(p.file);
+    viewer.urls[p.id] = u;
+    return u;
+  }
+
+  function showViewerPlaceholder(msg, isFallback) {
+    vel.ph.classList.remove("hidden");
+    vel.ph.textContent = msg || "";
+    vel.ph.classList.toggle("fallback", !!isFallback);
+    vel.img.classList.remove("is-ready");
+    vel.img.removeAttribute("src");
+  }
+
+  async function loadViewerImage(p) {
+    if (!p) return;
+    viewer.loadingId = p.id;
+    const img = vel.img;
+    img.classList.remove("is-ready");
+    // Missing original File: show 720/256 fallback blob WITH reselect message (never pretend it is the original)
+    if (!hasOriginalFile(p)) {
+      let fb = null;
+      if (p.displayBlob) fb = URL.createObjectURL(p.displayBlob);
+      else if (p.thumbBlob) fb = URL.createObjectURL(p.thumbBlob);
+      showViewerPlaceholder("請重新選取照片以載入原圖", true);
+      // Keep message visible overlay; still paint fallback underneath if available
+      if (fb) {
+        try {
+          img.src = fb;
+          if (typeof img.decode === "function") await img.decode();
+          if (viewer.loadingId === p.id) img.classList.add("is-ready");
+        } catch (_) {}
+        // revoke ephemeral fallback URL after paint (not tracked in viewer.urls)
+        setTimeout(function () { try { URL.revokeObjectURL(fb); } catch (_) {} }, 2000);
+      }
+      return;
+    }
+    showViewerPlaceholder("", false);
+    const url = originalUrlFor(p);
+    try {
+      img.src = url;
+      if (typeof img.decode === "function") await img.decode();
+      else {
+        await new Promise(function (resolve) {
+          if (img.complete && img.naturalWidth) resolve();
+          else { img.onload = function () { resolve(); }; img.onerror = function () { resolve(); }; }
+        });
+      }
+      if (viewer.loadingId !== p.id || !viewer.open) return;
+      vel.ph.classList.add("hidden");
+      img.classList.add("is-ready");
+      applyViewerTransform(false);
+    } catch (_) {
+      if (viewer.loadingId !== p.id) return;
+      showViewerPlaceholder("請重新選取照片以載入原圖", true);
+    }
+  }
+
+  function preloadViewerNeighbors() {
+    [-1, 1].forEach(function (d) {
+      const p = viewer.list[viewer.index + d];
+      if (!p || !hasOriginalFile(p)) return;
+      if (viewer.urls[p.id]) return;
+      const u = originalUrlFor(p);
+      const im = new Image();
+      im.decoding = "async";
+      im.src = u;
+      if (typeof im.decode === "function") im.decode().catch(function () {});
+    });
+    revokeFarViewerUrls();
+  }
+
+  function autoReasonText(p) {
+    if (!p) return "";
+    const th = thresholds();
+    const prevU = p.userTouched;
+    const prevC = p.choice;
+    p.userTouched = false;
+    p.choice = p.autoChoice;
+    const text = computeReason(p, p.groupSize || 1, th) || "";
+    p.userTouched = prevU;
+    p.choice = prevC;
+    return text;
+  }
+
+  function syncViewerNavForZoom() {
+    const hide = viewer.scale > 1.01;
+    if (vel.prev) vel.prev.classList.toggle("zoom-hidden", hide);
+    if (vel.next) vel.next.classList.toggle("zoom-hidden", hide);
+  }
+
+  function setPageChromeHidden(hidden) {
+    const nodes = document.querySelectorAll(".viewer-page-chrome");
+    for (let i = 0; i < nodes.length; i++) {
+      const n = nodes[i];
+      if (hidden) {
+        n.setAttribute("aria-hidden", "true");
+        try { n.inert = true; } catch (_) { n.setAttribute("inert", ""); }
+      } else {
+        n.removeAttribute("aria-hidden");
+        try { n.inert = false; } catch (_) { n.removeAttribute("inert"); }
+      }
+    }
+  }
+
+  function updateViewerChrome() {
+    const p = viewer.list[viewer.index];
+    if (!p) return;
+    vel.count.textContent = (viewer.index + 1) + " / " + viewer.list.length;
+    // Top reason: auto reason only — never duplicate 「你手動保留／刪除」 here
+    vel.reason.textContent = autoReasonText(p);
+    const manual = p.userTouched && p.choice !== p.autoChoice;
+    if (manual) {
+      vel.manual.textContent = p.choice === "keep" ? "你手動保留" : "你手動刪除";
+      vel.restore.classList.remove("hidden");
+    } else {
+      vel.manual.textContent = "";
+      vel.restore.classList.add("hidden");
+    }
+    vel.keep.classList.toggle("on", p.choice === "keep");
+    vel.del.classList.toggle("on", p.choice === "delete");
+    vel.prev.disabled = viewer.index <= 0;
+    vel.next.disabled = viewer.index >= viewer.list.length - 1;
+    syncViewerNavForZoom();
+  }
+
+  function updateSummaryCountsOnly() {
+    const kept = keptPhotos();
+    const dels = deletedPhotos();
+    const total = photos.filter(function (x) { return x.analyzed; }).length;
+    el.summaryCounts.innerHTML =
+      '<span class="c-keep">留 <strong>' + kept.length + "</strong></span>" +
+      '<span class="sep">　</span>' +
+      '<span class="c-del">刪 <strong>' + dels.length + "</strong></span>" +
+      '<span class="sep">　</span>' +
+      '<span class="c-total">共 <strong>' + total + "</strong></span>";
+  }
+
+  function patchCardInDom(p) {
+    if (!p) return;
+    const card = el.cards.querySelector('[data-id="' + CSS.escape(p.id) + '"]');
+    if (!card) return;
+    card.classList.toggle("keep", p.choice === "keep");
+    card.classList.toggle("delete", p.choice === "delete");
+    const badge = card.querySelector(".choice-badge");
+    if (badge) {
+      badge.textContent = p.choice === "keep" ? "留" : "刪";
+      badge.classList.toggle("keep", p.choice === "keep");
+      badge.classList.toggle("delete", p.choice === "delete");
+    }
+    const reason = card.querySelector(".reason");
+    if (reason) reason.textContent = p.reason || "";
+    card.querySelectorAll(".seg-opt.keep").forEach(function (b) { b.classList.toggle("on", p.choice === "keep"); });
+    card.querySelectorAll(".seg-opt.del").forEach(function (b) { b.classList.toggle("on", p.choice === "delete"); });
+    let restore = card.querySelector(".restore-link");
+    const showRestore = p.userTouched && p.choice !== p.autoChoice;
+    if (showRestore && !restore) {
+      const controls = card.querySelector(".card-controls") || card.querySelector(".meta-compact");
+      if (controls) {
+        restore = document.createElement("button");
+        restore.type = "button";
+        restore.className = "restore-link";
+        restore.setAttribute("data-act", "restore");
+        restore.textContent = "還原";
+        const sw = controls.querySelector(".seg-switch");
+        if (sw && sw.nextSibling) controls.insertBefore(restore, sw.nextSibling);
+        else controls.appendChild(restore);
+      }
+    } else if (!showRestore && restore) {
+      restore.remove();
+    }
+  }
+
+  async function applyViewerChoice(act) {
+    const p = viewer.list[viewer.index];
+    if (!p) return;
+    if (act === "keep") { p.choice = "keep"; p.userTouched = true; }
+    else if (act === "delete") { p.choice = "delete"; p.userTouched = true; }
+    else if (act === "restore") {
+      p.userTouched = false;
+      p.choice = p.autoChoice;
+    } else return;
+    const th = thresholds();
+    p.reason = computeReason(p, p.groupSize || 1, th);
+    await persistChoice(p);
+    updateViewerChrome();
+    updateSummaryCountsOnly();
+    patchCardInDom(p);
+  }
+
+  function openViewer(photoId, opts) {
+    opts = opts || {};
+    viewer.scrollY = window.scrollY || window.pageYOffset || 0;
+    viewer.focusId = photoId;
+    viewer.preferGroup = !!opts.preferGroup;
+    viewer.gid = opts.gid != null ? opts.gid : null;
+    viewer.list = buildViewerList(opts);
+    let idx = viewer.list.findIndex(function (p) { return p.id === photoId; });
+    if (idx < 0) {
+      viewer.list = resultListOrder();
+      idx = viewer.list.findIndex(function (p) { return p.id === photoId; });
+    }
+    if (idx < 0) return;
+    viewer.index = idx;
+    viewer.open = true;
+    resetViewerZoom(false);
+    document.body.classList.add("viewer-open");
+    setPageChromeHidden(true);
+    vel.root.setAttribute("aria-hidden", "false");
+    vel.root.classList.remove("closing");
+    vel.root.style.transform = "";
+    vel.root.style.opacity = "";
+    void vel.root.offsetWidth;
+    vel.root.classList.add("open");
+    updateViewerChrome();
+    loadViewerImage(viewer.list[viewer.index]);
+    preloadViewerNeighbors();
+  }
+
+  function findCardById(id) {
+    if (!id || !el.cards) return null;
+    const cards = el.cards.querySelectorAll("article.card[data-id]");
+    for (let i = 0; i < cards.length; i++) {
+      if (cards[i].getAttribute("data-id") === id) return cards[i];
+    }
+    return null;
+  }
+
+  function resetViewerZoom(animate) {
+    viewer.scale = 1;
+    viewer.tx = 0;
+    viewer.ty = 0;
+    applyViewerTransform(!!animate);
+  }
+
+  function applyViewerTransform(animate) {
+    const img = vel.img;
+    if (!img) return;
+    if (animate) img.classList.add("zoom-anim");
+    else img.classList.remove("zoom-anim");
+    img.style.transform = "translate3d(" + viewer.tx + "px," + viewer.ty + "px,0) scale(" + viewer.scale + ")";
+    syncViewerNavForZoom();
+  }
+
+  function viewerFrameRect() {
+    return (vel.frame || vel.stage).getBoundingClientRect();
+  }
+
+  function viewerImgLayoutSize() {
+    const img = vel.img;
+    // untransformed layout size: temporarily clear transform
+    const prev = img.style.transform;
+    img.style.transform = "translate3d(0,0,0) scale(1)";
+    const r = img.getBoundingClientRect();
+    img.style.transform = prev;
+    return { w: r.width, h: r.height, left: r.left, top: r.top };
+  }
+
+  function clampViewerPan() {
+    const s = viewer.scale;
+    if (s <= 1.001) {
+      viewer.tx = 0; viewer.ty = 0; viewer.scale = 1;
+      return;
+    }
+    const frame = viewerFrameRect();
+    const img = vel.img;
+    const prev = img.style.transform;
+    img.style.transform = "translate3d(0,0,0) scale(1)";
+    const base = img.getBoundingClientRect();
+    img.style.transform = prev;
+    const bw = base.width, bh = base.height;
+    const sw = bw * s, sh = bh * s;
+    // With transform-origin 0 0: visual top-left = (base.left + tx, base.top + ty) relative to viewport
+    // Actually origin 0 0 means scale from top-left of element; element's layout top-left is base.left/top at identity.
+    // After translate(tx,ty) scale(s) with origin 0 0: top-left at (layoutLeft+tx, layoutTop+ty), size sw x sh
+    // We need layout position at scale 1 inside frame — use offset relative to frame
+    const layoutLeft = base.left; // at identity, current scroll
+    const layoutTop = base.top;
+    // Recompute desired: keep image covering — edges don't leave viewport beyond bounds
+    // Min tx: right edge >= frame.right → layoutLeft + tx + sw >= frame.right → tx >= frame.right - layoutLeft - sw
+    // Max tx: left edge <= frame.left → layoutLeft + tx <= frame.left → tx <= frame.left - layoutLeft
+    // If sw < frame.width, center-ish clamp to not leave gaps on both sides incorrectly:
+    let minTx, maxTx, minTy, maxTy;
+    if (sw <= frame.width) {
+      // keep fully inside horizontally
+      minTx = frame.left - layoutLeft;
+      maxTx = frame.right - layoutLeft - sw;
+      if (minTx > maxTx) { const m = (minTx + maxTx) / 2; minTx = maxTx = m; }
+    } else {
+      maxTx = frame.left - layoutLeft;
+      minTx = frame.right - layoutLeft - sw;
+    }
+    if (sh <= frame.height) {
+      minTy = frame.top - layoutTop;
+      maxTy = frame.bottom - layoutTop - sh;
+      if (minTy > maxTy) { const m = (minTy + maxTy) / 2; minTy = maxTy = m; }
+    } else {
+      maxTy = frame.top - layoutTop;
+      minTy = frame.bottom - layoutTop - sh;
+    }
+    viewer.tx = Math.min(maxTx, Math.max(minTx, viewer.tx));
+    viewer.ty = Math.min(maxTy, Math.max(minTy, viewer.ty));
+  }
+
+  function fitWidthScale() {
+    const frame = viewerFrameRect();
+    const img = vel.img;
+    const prev = img.style.transform;
+    img.style.transform = "translate3d(0,0,0) scale(1)";
+    const base = img.getBoundingClientRect();
+    img.style.transform = prev;
+    if (!base.width) return 2;
+    const s = frame.width / base.width;
+    return s;
+  }
+
+  function zoomTo(scale, cx, cy, animate) {
+    // cx,cy = viewport coords of focal point
+    const img = vel.img;
+    const prev = img.style.transform;
+    img.style.transform = "translate3d(0,0,0) scale(1)";
+    const base = img.getBoundingClientRect();
+    img.style.transform = prev;
+    const oldS = viewer.scale || 1;
+    const newS = Math.min(viewer.maxScale, Math.max(1, scale));
+    // Point in image local (origin top-left) under focal: ((cx - (base.left+tx))/oldS)
+    const localX = (cx - (base.left + viewer.tx)) / oldS;
+    const localY = (cy - (base.top + viewer.ty)) / oldS;
+    viewer.scale = newS;
+    viewer.tx = cx - base.left - localX * newS;
+    viewer.ty = cy - base.top - localY * newS;
+    clampViewerPan();
+    applyViewerTransform(animate);
+  }
+
+  function viewerStep(delta) {
+    if (!viewer.open) return;
+    const ni = viewer.index + delta;
+    if (ni < 0 || ni >= viewer.list.length) return;
+    viewer.index = ni;
+    viewer.focusId = viewer.list[ni].id;
+    resetViewerZoom(false);
+    updateViewerChrome();
+    loadViewerImage(viewer.list[ni]);
+    preloadViewerNeighbors();
+  }
+
+  function closeViewer() {
+    if (!viewer.open && !vel.root.classList.contains("open")) return;
+    viewer.open = false;
+    resetViewerZoom(false);
+    vel.root.classList.add("closing");
+    vel.root.classList.remove("open");
+    document.body.classList.remove("viewer-open");
+    setPageChromeHidden(false);
+    vel.root.setAttribute("aria-hidden", "true");
+    vel.root.style.transform = "";
+    vel.root.style.opacity = "";
+    const focusId = viewer.focusId;
+    const y = viewer.scrollY || 0;
+    setTimeout(function () {
+      vel.root.classList.remove("closing");
+      Object.keys(viewer.urls).forEach(revokeViewerUrl);
+      viewer.list = [];
+      window.scrollTo(0, y);
+      const card = findCardById(focusId);
+      if (card) {
+        if (!card.hasAttribute("tabindex")) card.setAttribute("tabindex", "-1");
+        try { card.focus({ preventScroll: true }); } catch (_) {}
+      }
+    }, 200);
+  }
+
+  if (vel.close) vel.close.addEventListener("click", function (e) { e.stopPropagation(); closeViewer(); });
+  if (vel.prev) vel.prev.addEventListener("click", function (e) { e.stopPropagation(); viewerStep(-1); });
+  if (vel.next) vel.next.addEventListener("click", function (e) { e.stopPropagation(); viewerStep(1); });
+  if (vel.keep) vel.keep.addEventListener("click", function (e) { e.stopPropagation(); applyViewerChoice("keep"); });
+  if (vel.del) vel.del.addEventListener("click", function (e) { e.stopPropagation(); applyViewerChoice("delete"); });
+  if (vel.restore) vel.restore.addEventListener("click", function (e) { e.stopPropagation(); applyViewerChoice("restore"); });
+  if (vel.backdrop) vel.backdrop.addEventListener("click", function () {
+    if (viewer.scale > 1.01) return; // only at 1x
+    closeViewer();
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (!viewer.open) return;
+    if (e.key === "Escape") { e.preventDefault(); closeViewer(); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); viewerStep(-1); }
+    else if (e.key === "ArrowRight") { e.preventDefault(); viewerStep(1); }
+  });
+
+  (function bindViewerTouch() {
+    const TAP_MAX = 12;
+    const CLOSE_DY = 80;
+    const DBL_MS = 300;
+    let pointers = new Map(); // id -> {x,y}
+    let mode = null; // 'pan' | 'pinch' | 'swipe' | null
+    let pan0 = null; // {x,y,tx,ty}
+    let pinch0 = null; // {dist, scale, tx, ty, midX, midY}
+    let swipe0 = null; // {x,y}
+    let lastTap = null; // {t,x,y}
+    let rafPending = false;
+    let latest = null;
+
+    function clearGestures() {
+      mode = null; pan0 = null; pinch0 = null; swipe0 = null;
+      vel.root.style.transition = "";
+    }
+
+    function dist(a, b) {
+      const dx = a.x - b.x, dy = a.y - b.y;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function mid(a, b) {
+      return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    }
+
+    function scheduleApply() {
+      latest = true;
+      if (rafPending) return;
+      rafPending = true;
+      requestAnimationFrame(function () {
+        rafPending = false;
+        if (!latest) return;
+        latest = false;
+        clampViewerPan();
+        applyViewerTransform(false);
+      });
+    }
+
+    function onDown(ev) {
+      if (!viewer.open) return;
+      if (ev.target.closest("button") || ev.target.closest(".seg-switch") || ev.target.closest(".viewer-bottom") || ev.target.closest(".viewer-top")) return;
+      if (ev.pointerType === "mouse" && ev.button !== 0) return;
+      try { ev.currentTarget.setPointerCapture(ev.pointerId); } catch (_) {}
+      pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+      if (pointers.size === 2) {
+        const pts = Array.from(pointers.values());
+        pinch0 = {
+          dist: dist(pts[0], pts[1]) || 1,
+          scale: viewer.scale,
+          tx: viewer.tx, ty: viewer.ty,
+          mid: mid(pts[0], pts[1]),
+        };
+        mode = "pinch";
+        pan0 = null; swipe0 = null;
+        vel.root.style.transition = "none";
+        vel.root.style.transform = "";
+        vel.root.style.opacity = "";
+      } else if (pointers.size === 1) {
+        const p = pointers.values().next().value;
+        if (viewer.scale > 1.01) {
+          mode = "pan";
+          pan0 = { x: p.x, y: p.y, tx: viewer.tx, ty: viewer.ty };
+        } else {
+          mode = "swipe";
+          swipe0 = { x: p.x, y: p.y };
+          vel.root.style.transition = "none";
+        }
+      }
+    }
+
+    function onMove(ev) {
+      if (!viewer.open || !pointers.has(ev.pointerId)) return;
+      pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+      if (pointers.size >= 2) {
+        const pts = Array.from(pointers.values()).slice(0, 2);
+        if (!pinch0) {
+          pinch0 = {
+            dist: dist(pts[0], pts[1]) || 1,
+            scale: viewer.scale,
+            tx: viewer.tx, ty: viewer.ty,
+            mid: mid(pts[0], pts[1]),
+          };
+        }
+        mode = "pinch";
+        if (ev.cancelable) ev.preventDefault();
+        const d = dist(pts[0], pts[1]) || 1;
+        const m = mid(pts[0], pts[1]);
+        const newS = Math.min(viewer.maxScale, Math.max(1, pinch0.scale * (d / pinch0.dist)));
+        // Keep midpoint stable relative to image
+        const img = vel.img;
+        const prev = img.style.transform;
+        img.style.transform = "translate3d(0,0,0) scale(1)";
+        const base = img.getBoundingClientRect();
+        img.style.transform = prev;
+        const oldS = pinch0.scale;
+        const localX = (pinch0.mid.x - (base.left + pinch0.tx)) / oldS;
+        const localY = (pinch0.mid.y - (base.top + pinch0.ty)) / oldS;
+        viewer.scale = newS;
+        viewer.tx = m.x - base.left - localX * newS;
+        viewer.ty = m.y - base.top - localY * newS;
+        scheduleApply();
+        return;
+      }
+      if (mode === "pan" && pan0 && viewer.scale > 1.01) {
+        if (ev.cancelable) ev.preventDefault();
+        const p = pointers.values().next().value;
+        viewer.tx = pan0.tx + (p.x - pan0.x);
+        viewer.ty = pan0.ty + (p.y - pan0.y);
+        scheduleApply();
+        return;
+      }
+      if (mode === "swipe" && swipe0 && viewer.scale <= 1.01) {
+        const p = pointers.values().next().value;
+        const dx = p.x - swipe0.x;
+        const dy = p.y - swipe0.y;
+        if (Math.abs(dy) > Math.abs(dx) && dy > 0) {
+          if (ev.cancelable) ev.preventDefault();
+          const fade = Math.max(0.35, 1 - dy / 400);
+          vel.root.style.transform = "translateY(" + dy + "px)";
+          vel.root.style.opacity = String(fade);
+        }
+      }
+    }
+
+    function onUp(ev) {
+      if (!pointers.has(ev.pointerId)) return;
+      const up = pointers.get(ev.pointerId);
+      pointers.delete(ev.pointerId);
+      try { ev.currentTarget.releasePointerCapture(ev.pointerId); } catch (_) {}
+
+      if (mode === "pinch") {
+        if (pointers.size < 2) {
+          clampViewerPan();
+          applyViewerTransform(false);
+          if (pointers.size === 1 && viewer.scale > 1.01) {
+            const p = pointers.values().next().value;
+            mode = "pan";
+            pan0 = { x: p.x, y: p.y, tx: viewer.tx, ty: viewer.ty };
+            pinch0 = null;
+          } else {
+            clearGestures();
+          }
+        }
+        return;
+      }
+
+      if (mode === "pan") {
+        clampViewerPan();
+        applyViewerTransform(false);
+        // Tiny movement while zoomed counts as tap — allow double-tap to reset to 1x
+        if (pointers.size === 0 && pan0) {
+          const pdx = up.x - pan0.x, pdy = up.y - pan0.y;
+          if (Math.abs(pdx) < TAP_MAX && Math.abs(pdy) < TAP_MAX) {
+            const now = performance.now();
+            if (lastTap && now - lastTap.t < DBL_MS && Math.abs(up.x - lastTap.x) < TAP_MAX && Math.abs(up.y - lastTap.y) < TAP_MAX) {
+              lastTap = null;
+              resetViewerZoom(true);
+            } else {
+              lastTap = { t: now, x: up.x, y: up.y };
+            }
+          }
+        }
+        if (pointers.size === 0) clearGestures();
+        return;
+      }
+
+      if (mode === "swipe" && swipe0 && viewer.scale <= 1.01) {
+        const dx = up.x - swipe0.x;
+        const dy = up.y - swipe0.y;
+        vel.root.style.transition = "";
+        const absX = Math.abs(dx), absY = Math.abs(dy);
+        if (absX < TAP_MAX && absY < TAP_MAX) {
+          // tap / double-tap
+          const now = performance.now();
+          if (lastTap && now - lastTap.t < DBL_MS && Math.abs(up.x - lastTap.x) < TAP_MAX && Math.abs(up.y - lastTap.y) < TAP_MAX) {
+            lastTap = null;
+            // toggle 1x <-> fit-width (or 2x)
+            if (viewer.scale > 1.05) {
+              resetViewerZoom(true);
+            } else {
+              let s = fitWidthScale();
+              if (s <= 1.05) s = 2;
+              s = Math.min(viewer.maxScale, s);
+              zoomTo(s, up.x, up.y, true);
+            }
+          } else {
+            lastTap = { t: now, x: up.x, y: up.y };
+            // single tap on backdrop closes — if target is backdrop
+            if (ev.target === vel.backdrop || ev.target.id === "viewerBackdrop") {
+              setTimeout(function () {
+                // if no double-tap followed
+                if (lastTap && performance.now() - lastTap.t >= DBL_MS) {
+                  lastTap = null;
+                  if (viewer.scale <= 1.01) closeViewer();
+                }
+              }, DBL_MS + 10);
+            }
+          }
+          vel.root.style.transform = "";
+          vel.root.style.opacity = "";
+          clearGestures();
+          return;
+        }
+        if (absY > absX && dy > CLOSE_DY) {
+          closeViewer();
+          clearGestures();
+          return;
+        }
+        if (absX > absY && absX >= 40) {
+          if (dx <= -40) viewerStep(1);
+          else if (dx >= 40) viewerStep(-1);
+        }
+        vel.root.style.transform = "";
+        vel.root.style.opacity = "";
+        clearGestures();
+        return;
+      }
+      clearGestures();
+    }
+
+    const stage = vel.stage;
+    if (stage) {
+      stage.addEventListener("pointerdown", onDown);
+      stage.addEventListener("pointermove", onMove);
+      stage.addEventListener("pointerup", onUp);
+      stage.addEventListener("pointercancel", onUp);
+      // Prevent native gestures
+      stage.addEventListener("gesturestart", function (e) { e.preventDefault(); });
+    }
+  })();
+
+  // Expose zoom state for tests
+  window.__viewerZoom = function () {
+    return { scale: viewer.scale, tx: viewer.tx, ty: viewer.ty };
+  };
 
   // Events
   el.btnAdvToggle.addEventListener("click", function () {
@@ -1730,19 +3269,27 @@
       renderResult();
       return;
     }
-    const btn = e.target.closest("[data-act]");
-    if (!btn) return;
-    const card = btn.closest("[data-id]");
+    const card = e.target.closest("[data-id]");
     if (!card) return;
     const p = photos.find(function (x) { return x.id === card.getAttribute("data-id"); });
     if (!p) return;
-    const act = btn.getAttribute("data-act");
+    const btn = e.target.closest("[data-act]");
+    const act = btn ? btn.getAttribute("data-act") : null;
+    // Tap card thumb (or 看大圖) opens viewer — not when hitting keep/delete/restore
+    if (act === "view" || (!btn && e.target.closest(".thumb-wrap"))) {
+      const block = card.closest(".group-block");
+      const gid = block ? +block.getAttribute("data-gid") : p.groupId;
+      const inExtras = !!(e.target.closest(".group-extras"));
+      openViewer(p.id, { preferGroup: inExtras || (expandedGroups[gid] && (p.groupSize || 1) > 1), gid: gid });
+      return;
+    }
+    if (!btn) return;
     if (act === "keep") { p.choice = "keep"; p.userTouched = true; }
     else if (act === "delete") { p.choice = "delete"; p.userTouched = true; }
     else if (act === "restore") {
       p.userTouched = false;
       p.choice = p.autoChoice;
-    }
+    } else return;
     const th = thresholds();
     p.reason = computeReason(p, p.groupSize || 1, th);
     await persistChoice(p);
@@ -1780,23 +3327,10 @@
       if (!seg) return;
       const grid = el.delSegments.querySelector('[data-seg-grid="' + idx + '"]');
       if (!grid) return;
-      more.remove();
-      const rest = seg.photos.slice(6);
-      const BATCH = 12;
-      let i = 0;
-      function addBatch() {
-        const chunk = rest.slice(i, i + BATCH);
-        const html = chunk.map(function (p) { return thumbCellHtml(p, true); }).join("");
-        grid.insertAdjacentHTML("beforeend", html);
-        setupFinishLazyThumbs(grid);
-        i += BATCH;
-        if (i < rest.length) {
-          requestAnimationFrame(addBatch);
-        } else {
-          expandedSegThumbs[idx] = true;
-        }
-      }
-      addBatch();
+      expandedSegThumbs[idx] = true;
+      // Rebuild full grid so hour dividers insert correctly with lazy thumbs
+      grid.innerHTML = buildSegGridHtml(seg.photos, { open: true, segIdx: idx });
+      setupFinishLazyThumbs(grid);
       return;
     }
 
@@ -1828,6 +3362,19 @@
     getPhotos: function () { return photos; },
     isProcessing: function () { return processing; },
     isPaused: function () { return paused; },
+    getDisplayLiveCount: function () { return displayLiveOrder.length; },
+    openViewer: function (id, opts) { openViewer(id, opts || {}); },
+    closeViewer: function () { closeViewer(); },
+    isViewerOpen: function () { return !!viewer.open; },
+    getViewerLiveUrlCount: function () { return Object.keys(viewer.urls).length; },
+    getViewerIndex: function () { return { index: viewer.index, n: viewer.list.length, id: viewer.list[viewer.index] && viewer.list[viewer.index].id }; },
+    getViewerZoom: function () { return { scale: viewer.scale, tx: viewer.tx, ty: viewer.ty }; },
+    viewerZoomTo: function (s, cx, cy) { zoomTo(s, cx, cy, false); },
+    viewerResetZoom: function () { resetViewerZoom(false); },
+    viewerStep: function (d) { viewerStep(d); },
+
+
+    getDisplayQueueLength: function () { return displayEncodeQueue.length + displayEncodeInflight; },
     isReady: function () {
       if (processing) return false;
       if (photos.length > 0) return photos.every(function (p) { return p.analyzed; });
