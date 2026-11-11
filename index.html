@@ -40,7 +40,7 @@
     -webkit-tap-highlight-color: transparent;
     overflow-x: hidden; max-width: 100vw;
   }
-  body { padding-bottom: calc(108px + var(--safe-bottom)); }
+  body { padding-bottom: calc(132px + var(--safe-bottom)); }
   body.screen-home { padding-bottom: calc(24px + var(--safe-bottom)); }
   body.screen-finish { padding-bottom: calc(24px + var(--safe-bottom)); }
   body.screen-result { padding-top: calc(var(--summary-h) + var(--safe-top)); }
@@ -188,6 +188,96 @@
   .more-menu button:active { background: var(--chip); }
 
   .result-hint { margin: 10px 0 12px; padding-right: 44px; }
+  /* v9: result filter (sticky under summary bar, ≤96px) */
+  .filter-bar {
+    position: sticky; top: calc(var(--summary-h) + var(--safe-top)); z-index: 30;
+    margin: 0 -14px 12px; padding: 8px 14px 8px; background: rgba(246, 247, 249, 0.96);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border); max-height: 96px;
+  }
+  .filter-seg {
+    display: flex; width: 100%; height: 40px; border-radius: 12px; overflow: hidden;
+    border: 1px solid var(--border); background: var(--card);
+  }
+  .filter-opt {
+    flex: 1 1 0; min-width: 0; min-height: 40px; border: none; background: var(--card);
+    font-family: inherit; font-size: 15px; font-weight: 700; color: var(--muted); cursor: pointer;
+    white-space: nowrap; padding: 0 4px; font-variant-numeric: tabular-nums;
+    transition: background-color 150ms, color 150ms;
+  }
+  .filter-opt + .filter-opt { border-left: 1px solid var(--border); }
+  .filter-opt[data-filter="delete"].on { background: var(--del); color: #fff; }
+  .filter-opt[data-filter="keep"].on { background: var(--keep); color: #fff; }
+  .filter-opt[data-filter="all"].on { background: var(--accent); color: #fff; }
+  .filter-hint {
+    margin: 6px 0 0; padding: 6px 10px; border-radius: 10px; font-size: 14px; font-weight: 600; line-height: 1.35;
+    background: rgba(196, 135, 26, 0.12); color: #8A5A00; font-variant-numeric: tabular-nums;
+    transition: background-color 200ms, color 200ms;
+  }
+  .filter-hint.done { background: rgba(22, 163, 74, 0.12); color: #15803D; }
+  @keyframes numFlash { 0% { background-color: rgba(22,163,74,.35); } 100% { background-color: transparent; } }
+  .num-flash { animation: numFlash 600ms ease-out; border-radius: 4px; }
+  .filter-opt.on .num-flash { animation: none; }
+  #summaryCounts strong, .filter-opt span { font-variant-numeric: tabular-nums; }
+  /* filtered cards */
+  .card.filtered .choice-badge { left: 10px; right: auto; }
+  .card.filtered .tag-row { left: 64px; right: 10px; justify-content: flex-end; }
+  .card.filtered { transition: opacity 150ms, border-color 150ms; }
+  .card.filtered { border-width: 2px; }
+  .card.filtered.delete { border-color: #E5484D; }
+  .card.filtered.keep { border-color: #16A34A; }
+  .card.filtered.rescued .thumb-wrap,
+  .card.filtered.rescued .meta > :not(.card-controls) { opacity: 0.6; transition: opacity 150ms; }
+  .btn-rescue {
+    display: flex; align-items: center; justify-content: center; width: 100%; min-height: 44px;
+    border-radius: 12px; border: 1.5px solid var(--keep); background: var(--card); color: var(--keep);
+    font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
+  }
+  .rescued-note {
+    margin-top: 10px; padding: 8px 10px; border-radius: 10px; font-size: 14px; line-height: 1.4;
+    background: rgba(22, 163, 74, 0.08); color: #15803D; font-weight: 600;
+  }
+  .rescued-note.to-del { background: rgba(229, 72, 77, 0.08); color: #B42318; }
+  .card.just-moved { opacity: 0.6; }
+  .btn-rescue.done { border-color: #16A34A; color: #16A34A; background: #fff; font-weight: 700; }
+  .group-ref {
+    display: flex; align-items: center; gap: 10px; width: 100%; margin: 0 0 10px; min-height: 44px;
+    font-size: 14px; color: var(--muted); line-height: 1.35;
+  }
+  .group-ref .gr-thumb {
+    flex-shrink: 0; width: 56px; height: 42px; border-radius: 6px; overflow: hidden; background: #E8EAED;
+    border: none; padding: 0; cursor: pointer; position: relative;
+  }
+  .group-ref .gr-thumb::before { content: ""; position: absolute; inset: -1px -0px; }
+  .group-ref .gr-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .group-ref .gr-text { flex: 1; min-width: 0; word-break: break-all; }
+  .group-ref.none .gr-text { color: var(--warn); }
+  .footer-summary { text-align: center; font-size: 14px; color: var(--muted); margin: 0 0 8px; line-height: 1.35; font-variant-numeric: tabular-nums; }
+  .footer-summary strong { color: var(--text); }
+  .confirm-summary {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 12px 14px; margin: 0 0 12px; box-shadow: var(--shadow); font-variant-numeric: tabular-nums;
+  }
+  .confirm-summary .cs-line { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 4px 0; }
+  .confirm-summary .cs-lbl { font-size: 16px; font-weight: 600; color: var(--text); }
+  .confirm-summary .cs-num { font-size: 20px; font-weight: 800; min-width: 4.5em; text-align: right; }
+  .confirm-summary .cs-keep .cs-num { color: var(--keep); }
+  .confirm-summary .cs-del .cs-num { color: var(--del); }
+  .confirm-summary .cs-man .cs-lbl, .confirm-summary .cs-man .cs-num { font-size: 14px; font-weight: 600; color: var(--muted); }
+  .steps { margin: 0 0 14px; }
+  .steps-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 10px; }
+  .steps-title { font-size: 16px; font-weight: 700; margin: 0; color: var(--text); }
+  .pill-safe { font-size: 14px; font-weight: 700; color: #15803D; background: rgba(22,163,74,.12); padding: 3px 10px; border-radius: 999px; }
+  .pill-untested { font-size: 14px; font-weight: 600; color: var(--muted); background: var(--chip); border: 1px solid var(--border); padding: 1px 8px; border-radius: 999px; white-space: nowrap; }
+  .step { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; }
+  .step + .step { border-top: 1px solid var(--border); }
+  .step-num {
+    flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #fff;
+    font-size: 15px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center;
+  }
+  .step-body { flex: 1; min-width: 0; }
+  .step-title { font-size: 16px; font-weight: 700; line-height: 1.4; color: var(--text); }
+  .step-desc { font-size: 14px; color: var(--muted); line-height: 1.5; margin-top: 2px; }
   #resultAdvPanel { margin-bottom: 10px; }
 
   .cards { display: flex; flex-direction: column; gap: 14px; }
@@ -599,13 +689,36 @@
       <button type="button" class="hint-close" id="btnHintClose" aria-label="關閉提示">×</button>
     </div>
     <div id="resultAdvPanel" class="hidden"></div>
+    <div class="filter-bar" id="filterBar">
+      <div class="filter-seg" role="tablist" aria-label="篩選照片">
+        <button type="button" class="filter-opt" role="tab" data-filter="delete" aria-label="只看要刪的">要刪 <span id="fcDel">0</span></button>
+        <button type="button" class="filter-opt" role="tab" data-filter="keep" aria-label="只看要留的">要留 <span id="fcKeep">0</span></button>
+        <button type="button" class="filter-opt" role="tab" data-filter="all" aria-label="全部">全部 <span id="fcAll">0</span></button>
+      </div>
+      <p class="filter-hint" id="filterHeadline" aria-live="polite"></p>
+    </div>
     <div id="cards" class="cards"></div>
   </div>
 
   <div id="finishPanel" class="hidden">
     <h2 class="del-headline" id="delHeadline">要刪 0 張</h2>
     <div class="amber-alert hidden" id="amberAlertFinish" role="status"></div>
-    <p class="notice" style="margin:0 0 12px"><strong>請到「照片」App 手動刪除以下原檔。</strong>此網頁無法代你刪除。縮圖上的時間可對照 Photos。縮圖由舊到新。</p>
+    <div class="confirm-summary" id="confirmSummary" role="status" style="margin:0 0 14px"></div>
+    <div class="panel steps" id="finishSteps">
+      <div class="steps-head"><p class="steps-title">先移到「待刪除」相簿</p><span class="pill-safe">不會直接刪除</span></div>
+      <div class="step"><span class="step-num">1</span><div class="step-body">
+        <div class="step-title">執行「移到待刪除」捷徑</div>
+        <div class="step-desc">在下面每個時段點「複製刪除清單」，再到「捷徑」執行，貼上開始和結束時間。照片只會加入「待刪除」相簿。 <span class="pill-untested">未實測</span></div>
+      </div></div>
+      <div class="step"><span class="step-num">2</span><div class="step-body">
+        <div class="step-title">在照片 App 打開「待刪除」相簿再看一遍</div>
+        <div class="step-desc">想留的照片，選「從相簿中移除」就好，原檔不會被刪。</div>
+      </div></div>
+      <div class="step"><span class="step-num">3</span><div class="step-body">
+        <div class="step-title">確認後全選刪除，或執行「清空待刪除相簿」捷徑</div>
+        <div class="step-desc">在相簿裡要選「刪除」，不是「從相簿中移除」。刪掉的照片會先進「最近刪除」。 <span class="pill-untested">未實測</span></div>
+      </div></div>
+    </div>
     <p class="status" id="delCount" style="margin-bottom:10px">0 張</p>
     <div class="del-segments" id="delSegments"></div>
 
@@ -626,6 +739,7 @@
 
 <div class="footer hidden viewer-page-chrome" id="mainFooter">
   <div class="footer-inner">
+    <p class="footer-summary" id="footerSummary"></p>
     <button type="button" class="btn btn-primary" id="btnConfirm">確認</button>
   </div>
 </div>
@@ -695,6 +809,12 @@
   let thumbObserver = null;
   let unreadableFiles = [];
   let expandedSegThumbs = {};
+  // v9: result filter — "delete" (default) | "keep" | "all"
+  let resultFilter = "delete";
+  // ids changed while visible in a filtered list; stay listed until filter switch / re-pick
+  let rescuedPending = {};
+  let renderGen = 0;
+  let filteredListCache = [];
 
   const el = {
     homeScreen: document.getElementById("homeScreen"),
@@ -735,6 +855,13 @@
     btnShare: document.getElementById("btnShare"),
     btnBackToCards: document.getElementById("btnBackToCards"),
     toast: document.getElementById("toast"),
+    filterBar: document.getElementById("filterBar"),
+    filterHeadline: document.getElementById("filterHeadline"),
+    fcDel: document.getElementById("fcDel"),
+    fcKeep: document.getElementById("fcKeep"),
+    fcAll: document.getElementById("fcAll"),
+    footerSummary: document.getElementById("footerSummary"),
+    confirmSummary: document.getElementById("confirmSummary"),
     sharpSlider: document.getElementById("sharpSlider"),
     overSlider: document.getElementById("overSlider"),
     underSlider: document.getElementById("underSlider"),
@@ -1958,13 +2085,57 @@
     return lines.join("\n");
   }
 
+  function manualCount() {
+    return photos.filter(function (p) { return p.analyzed && p.userTouched && p.choice !== p.autoChoice; }).length;
+  }
+  function matchesFilter(p, f) {
+    if (!p || !p.analyzed) return false;
+    if (f === "keep") return p.choice === "keep";
+    if (f === "delete") return p.choice === "delete";
+    return true;
+  }
+  /** Kept photos in p's group other than p (best first). */
+  function groupKeepersFor(p) {
+    if (!p || p.groupId == null || (p.groupSize || 1) <= 1) return [];
+    const mates = photos.filter(function (x) { return x !== p && x.analyzed && x.groupId === p.groupId && x.choice === "keep"; });
+    mates.sort(function (a, b) { return (b.isBest ? 1 : 0) - (a.isBest ? 1 : 0); });
+    return mates;
+  }
+  function groupRefHtml(p) {
+    if (!p || p.groupId == null || (p.groupSize || 1) <= 1) return "";
+    const keepers = groupKeepersFor(p);
+    if (!keepers.length) {
+      if (p.choice === "keep") return "";
+      return '<div class="group-ref none"><span class="gr-text">同組 ' + p.groupSize + " 張目前都沒有留</span></div>";
+    }
+    const k = keepers[0];
+    const more = keepers.length > 1 ? "（另 " + (keepers.length - 1) + " 張）" : "";
+    return '<div class="group-ref">' +
+      '<button type="button" class="gr-thumb" data-act="group-ref" data-ref-id="' + escapeAttr(k.id) + '" aria-label="看同組保留的 ' + escapeAttr(k.name) + '">' +
+        '<img alt="" data-pid="' + escapeAttr(k.id) + '" data-kind="mini" /></button>' +
+      '<span class="gr-text">同組保留：' + escapeHtml(k.name) + more + "</span></div>";
+  }
+  function rescuedNoteText(p) {
+    if (!rescuedPending[p.id] || matchesFilter(p, resultFilter) || resultFilter === "all") return "";
+    return p.choice === "keep"
+      ? "已救回，改為保留。切換篩選後才會移出這個列表。"
+      : "已改為刪除。切換篩選後才會移出這個列表。";
+  }
+  function rescueBtnHtml(p) {
+    const done = p.choice === "keep";
+    return '<button type="button" class="btn-rescue' + (done ? " done" : "") + '" data-act="' + (done ? "unrescue" : "rescue") + '">' +
+      (done ? "已救回・復原" : "救回") + "</button>";
+  }
   function cardHtml(p, opts) {
     opts = opts || {};
     const compact = !!(opts && opts.compact);
+    const filtered = !!opts.filtered;
     const cls = ["card", p.choice === "keep" ? "keep" : "delete"];
     if (compact) cls.push("card-compact");
+    if (filtered) cls.push("filtered");
+    if (filtered && rescuedPending[p.id] && !matchesFilter(p, resultFilter)) cls.push(resultFilter === "delete" ? "rescued" : "just-moved");
     const tags = [];
-    if (p.isBest && p.groupSize > 1) tags.push('<span class="tag best">建議留下</span>');
+    if (p.isBest && p.groupSize > 1 && !filtered) tags.push('<span class="tag best">建議留下</span>');
     if (p.userTouched) tags.push('<span class="tag manual">手動</span>');
     const badgeCls = p.choice === "keep" ? "keep" : "delete";
     const badgeText = p.choice === "keep" ? "留" : "刪";
@@ -2004,8 +2175,12 @@
         '<div class="meta">' +
           '<div class="fname">' + escapeHtml(p.name) + "</div>" +
           '<div class="reason">' + escapeHtml(p.reason || "") + "</div>" +
+          (filtered ? groupRefHtml(p) : "") +
           '<div class="scores">清晰度 ' + Math.round(p.sharp) + " · 亮度 " + Math.round(p.mean) + "</div>" +
-          '<div class="card-controls">' + switchHtml + restoreHtml + "</div>" +
+          (filtered && resultFilter === "delete"
+            ? '<div class="card-controls">' + rescueBtnHtml(p) + "</div>"
+            : '<div class="card-controls">' + switchHtml + restoreHtml + "</div>" +
+              (filtered ? '<div class="rescued-note' + (p.choice === "delete" ? " to-del" : "") + (rescuedNoteText(p) ? "" : " hidden") + '">' + escapeHtml(rescuedNoteText(p)) + "</div>" : "")) +
           '<button type="button" class="btn-view-full" data-act="view">看大圖</button>' +
         "</div>" +
       "</article>"
@@ -2014,8 +2189,15 @@
 
   function setupLazyThumbs(root) {
     if (thumbObserver) thumbObserver.disconnect();
-    const imgs = root.querySelectorAll("img[data-pid][data-kind=\"display\"]");
+    const imgs = root.querySelectorAll("img[data-pid][data-kind=\"display\"], img[data-pid][data-kind=\"mini\"]");
     function reveal(img) {
+      if (img.getAttribute("data-kind") === "mini") {
+        const mp = photos.find(function (x) { return x.id === img.getAttribute("data-pid"); });
+        const mu = mp ? ensureThumbUrl(mp, "thumb") : "";
+        if (mu) { img.src = mu; img.setAttribute("data-loaded", "1"); }
+        if (thumbObserver) thumbObserver.unobserve(img);
+        return;
+      }
       revealResultCardImg(img);
       // Keep observing until loaded so a recycled placeholder can retry; unobserve when ready
       if (img.getAttribute("data-loaded") === "1" && thumbObserver) thumbObserver.unobserve(img);
@@ -2072,6 +2254,95 @@
     html += "</div>";
     return html;
   }
+  function updateFilterBar() {
+    const kept = keptPhotos().length;
+    const dels = deletedPhotos().length;
+    const total = photos.filter(function (p) { return p.analyzed; }).length;
+    const man = manualCount();
+    if (el.fcDel) el.fcDel.textContent = String(dels);
+    if (el.fcKeep) el.fcKeep.textContent = String(kept);
+    if (el.fcAll) el.fcAll.textContent = String(total);
+    if (el.filterBar) {
+      el.filterBar.querySelectorAll("[data-filter]").forEach(function (b) {
+        const on = b.getAttribute("data-filter") === resultFilter;
+        b.classList.toggle("on", on);
+        b.setAttribute("aria-selected", on ? "true" : "false");
+      });
+    }
+    if (el.filterHeadline) {
+      if (resultFilter === "delete" && dels > 0) {
+        el.filterHeadline.classList.remove("hidden");
+        el.filterHeadline.classList.toggle("done", !!delSeenAll);
+        el.filterHeadline.textContent = delSeenAll ? "已看完全部要刪的照片" : "將刪除 " + dels + " 張，請先滑過確認";
+      } else {
+        el.filterHeadline.classList.add("hidden");
+      }
+    }
+    flashIfChanged(el.fcDel, "d", dels);
+    flashIfChanged(el.fcKeep, "k", kept);
+    const sk = el.summaryCounts && el.summaryCounts.querySelector(".c-keep strong");
+    const sd = el.summaryCounts && el.summaryCounts.querySelector(".c-del strong");
+    flashIfChanged(sk, "sk", kept);
+    flashIfChanged(sd, "sd", dels);
+    if (el.footerSummary) {
+      el.footerSummary.innerHTML = "留 <strong>" + kept + "</strong> 張 · 刪 <strong>" + dels + "</strong> 張" +
+        (man ? " · 你手動改了 <strong>" + man + "</strong> 張" : "");
+    }
+  }
+  const lastNums = {};
+  function flashIfChanged(node, key, val) {
+    if (!node) return;
+    if (lastNums[key] != null && lastNums[key] !== val) {
+      node.classList.remove("num-flash"); void node.offsetWidth; node.classList.add("num-flash");
+    }
+    lastNums[key] = val;
+  }
+  let delSeenAll = false;
+  let filteredRenderDone = false;
+  function checkDelSeenAll() {
+    if (resultFilter !== "delete" || delSeenAll || !filteredRenderDone) return;
+    const doc = document.documentElement;
+    if ((window.scrollY || 0) + window.innerHeight >= doc.scrollHeight - 160) {
+      delSeenAll = true;
+      updateFilterBar();
+    }
+  }
+  window.addEventListener("scroll", function () { checkDelSeenAll(); }, { passive: true });
+  function filteredList() {
+    return resultListOrder().filter(function (p) {
+      return matchesFilter(p, resultFilter) || !!rescuedPending[p.id];
+    });
+  }
+  function renderFilteredResult() {
+    const gen = ++renderGen;
+    const list = filteredList();
+    filteredListCache = list;
+    if (!list.length) {
+      el.cards.innerHTML = '<div class="empty">' + (resultFilter === "delete" ? "沒有要刪的照片" : "沒有要留的照片") + "</div>";
+      return;
+    }
+    const FIRST = 16, CHUNK = 24;
+    filteredRenderDone = false;
+    el.cards.innerHTML = list.slice(0, FIRST).map(function (p) { return cardHtml(p, { filtered: true }); }).join("");
+    setupLazyThumbs(el.cards);
+    if (list.length <= FIRST) { filteredRenderDone = true; return; }
+    (async function () {
+      for (let i = FIRST; i < list.length; i += CHUNK) {
+        await yieldToUI();
+        if (gen !== renderGen) return;
+        el.cards.insertAdjacentHTML("beforeend", list.slice(i, i + CHUNK).map(function (p) { return cardHtml(p, { filtered: true }); }).join(""));
+      }
+      if (gen === renderGen) { setupLazyThumbs(el.cards); filteredRenderDone = true; }
+    })().catch(function () {});
+  }
+  function setResultFilter(f) {
+    if (f !== "delete" && f !== "keep" && f !== "all") return;
+    resultFilter = f;
+    rescuedPending = {};
+    delSeenAll = false;
+    renderResult();
+    window.scrollTo(0, 0);
+  }
   function renderResult() {
     const kept = keptPhotos();
     const dels = deletedPhotos();
@@ -2084,8 +2355,13 @@
       '<span class="c-total">共 <strong>' + total + "</strong></span>";
 
     const hintDismissed = localStorage.getItem(HINT_KEY) === "1";
-    if (el.resultHint) el.resultHint.classList.toggle("hidden", hintDismissed);
+    if (el.resultHint) el.resultHint.classList.toggle("hidden", hintDismissed || resultFilter !== "all");
     renderAmberAlerts("result");
+    updateFilterBar();
+
+    if (resultFilter !== "all") { renderFilteredResult(); return; }
+    renderGen++;
+    filteredListCache = [];
 
     const groups = groupsOrdered();
     if (!groups.length) {
@@ -2105,13 +2381,16 @@
   }
   async function renderResultChunked(groups) {
     if (!groups) groups = groupsOrdered();
+    const gen = renderGen;
     el.cards.innerHTML = "";
     const CHUNK = 25;
     for (let i = 0; i < groups.length; i += CHUNK) {
+      if (gen !== renderGen) return;
       const slice = groups.slice(i, i + CHUNK);
       el.cards.insertAdjacentHTML("beforeend", slice.map(groupBlockHtml).join(""));
       if (i + CHUNK < groups.length) await yieldToUI();
     }
+    if (gen !== renderGen) return;
     setupLazyThumbs(el.cards);
   }
 
@@ -2247,6 +2526,14 @@
     const dels = deletedPhotos();
     const segs = buildDeleteSegments(dels);
     el.delHeadline.textContent = "要刪 " + dels.length + " 張";
+    if (el.confirmSummary) {
+      const man = manualCount();
+      el.confirmSummary.innerHTML =
+        '<div class="cs-line cs-keep"><span class="cs-lbl">留</span><span class="cs-num">' + kept.length + ' 張</span></div>' +
+        '<div class="cs-line cs-del"><span class="cs-lbl">刪</span><span class="cs-num">' + dels.length + ' 張</span></div>' +
+        '<div class="cs-line cs-man"><span class="cs-lbl">你手動改了</span><span class="cs-num">' + man + ' 張</span></div>';
+      el.confirmSummary.setAttribute("aria-label", "留 " + kept.length + " 張、刪 " + dels.length + " 張，其中你手動改了 " + man + " 張");
+    }
     el.delCount.textContent = dels.length + " 張 · " + segs.length + " 天";
     renderAmberAlerts("finish");
     if (!segs.length) {
@@ -2303,6 +2590,7 @@
   async function processFiles(fileList) {
     if (processing) return;
     processing = true; paused = false; pauseWaiters = [];
+    resultFilter = "delete"; rescuedPending = {}; renderGen++; delSeenAll = false;
     el.btnPause.textContent = "暫停";
     const files = Array.prototype.slice.call(fileList).filter(function (f) {
       return f.type.indexOf("image/") === 0 || /\.(jpe?g|png|gif|webp|heic|heif)$/i.test(f.name);
@@ -2432,39 +2720,11 @@
       el.progressText.textContent += " · 無法讀取 " + unreadableFiles.length;
     }
     await yieldToUI();
-    const groups = groupsOrdered();
     setScreen("result");
-    {
-      const kept = keptPhotos();
-      const dels = deletedPhotos();
-      const total = photos.filter(function (p) { return p.analyzed; }).length;
-      el.summaryCounts.innerHTML =
-        '<span class="c-keep">留 <strong>' + kept.length + "</strong></span>" +
-        '<span class="sep">　</span>' +
-        '<span class="c-del">刪 <strong>' + dels.length + "</strong></span>" +
-        '<span class="sep">　</span>' +
-        '<span class="c-total">共 <strong>' + total + "</strong></span>";
-      const hintDismissed = localStorage.getItem(HINT_KEY) === "1";
-      if (el.resultHint) el.resultHint.classList.toggle("hidden", hintDismissed);
-      renderAmberAlerts("result");
-    }
-    if (groups.length <= 30) {
-      el.cards.innerHTML = groups.map(groupBlockHtml).join("");
-      setupLazyThumbs(el.cards);
-      processing = false;
-    } else {
-      el.cards.innerHTML = groups.slice(0, 24).map(groupBlockHtml).join("");
-      setupLazyThumbs(el.cards);
-      processing = false;
-      (async function () {
-        const CHUNK = 12;
-        for (let gi = 24; gi < groups.length; gi += CHUNK) {
-          el.cards.insertAdjacentHTML("beforeend", groups.slice(gi, gi + CHUNK).map(groupBlockHtml).join(""));
-          await yieldToUI();
-        }
-        setupLazyThumbs(el.cards);
-      })().catch(function () {});
-    }
+    resultFilter = "delete";
+    rescuedPending = {};
+    processing = false;
+    renderResult();
   }
 
   /* ========== Full-image viewer (v8e) ========== */
@@ -2516,6 +2776,7 @@
 
   function buildViewerList(opts) {
     opts = opts || {};
+    if (opts.list && opts.list.length) return opts.list.slice();
     if (opts.preferGroup && opts.gid != null) {
       const g = groupsOrdered().find(function (x) { return x.gid === opts.gid; });
       if (g && g.photos && g.photos.length) {
@@ -2654,7 +2915,8 @@
   function updateViewerChrome() {
     const p = viewer.list[viewer.index];
     if (!p) return;
-    vel.count.textContent = (viewer.index + 1) + " / " + viewer.list.length;
+    vel.count.textContent = (viewer.scope === "delete" ? "要刪 " : viewer.scope === "keep" ? "要留 " : "") +
+      (viewer.index + 1) + " / " + viewer.list.length;
     // Top reason: auto reason only — never duplicate 「你手動保留／刪除」 here
     vel.reason.textContent = autoReasonText(p);
     const manual = p.userTouched && p.choice !== p.autoChoice;
@@ -2682,6 +2944,7 @@
       '<span class="c-del">刪 <strong>' + dels.length + "</strong></span>" +
       '<span class="sep">　</span>' +
       '<span class="c-total">共 <strong>' + total + "</strong></span>";
+    updateFilterBar();
   }
 
   function patchCardInDom(p) {
@@ -2700,8 +2963,25 @@
     if (reason) reason.textContent = p.reason || "";
     card.querySelectorAll(".seg-opt.keep").forEach(function (b) { b.classList.toggle("on", p.choice === "keep"); });
     card.querySelectorAll(".seg-opt.del").forEach(function (b) { b.classList.toggle("on", p.choice === "delete"); });
+    const note = card.querySelector(".rescued-note");
+    if (note) {
+      const t = rescuedNoteText(p);
+      note.textContent = t;
+      note.classList.toggle("hidden", !t);
+      note.classList.toggle("to-del", p.choice === "delete");
+    }
+    const moved = !!(card.classList.contains("filtered") && rescuedPending[p.id] && !matchesFilter(p, resultFilter));
+    card.classList.toggle("rescued", moved && resultFilter === "delete");
+    card.classList.toggle("just-moved", moved && resultFilter !== "delete");
+    const rb = card.querySelector(".btn-rescue");
+    if (rb) {
+      const done = p.choice === "keep";
+      rb.classList.toggle("done", done);
+      rb.setAttribute("data-act", done ? "unrescue" : "rescue");
+      rb.textContent = done ? "已救回・復原" : "救回";
+    }
     let restore = card.querySelector(".restore-link");
-    const showRestore = p.userTouched && p.choice !== p.autoChoice;
+    const showRestore = p.userTouched && p.choice !== p.autoChoice && !rb;
     if (showRestore && !restore) {
       const controls = card.querySelector(".card-controls") || card.querySelector(".meta-compact");
       if (controls) {
@@ -2730,6 +3010,7 @@
     } else return;
     const th = thresholds();
     p.reason = computeReason(p, p.groupSize || 1, th);
+    if (resultFilter !== "all") rescuedPending[p.id] = true;
     await persistChoice(p);
     updateViewerChrome();
     updateSummaryCountsOnly();
@@ -2743,9 +3024,11 @@
     viewer.preferGroup = !!opts.preferGroup;
     viewer.gid = opts.gid != null ? opts.gid : null;
     viewer.list = buildViewerList(opts);
+    viewer.scope = opts.list && opts.list.length ? (opts.scope || "") : "";
     let idx = viewer.list.findIndex(function (p) { return p.id === photoId; });
     if (idx < 0) {
       viewer.list = resultListOrder();
+      viewer.scope = "";
       idx = viewer.list.findIndex(function (p) { return p.id === photoId; });
     }
     if (idx < 0) return;
@@ -3207,6 +3490,7 @@
   el.btnReselect.addEventListener("click", function () {
     closeMoreMenu();
     photos = []; showFinish = false; el.fileInput.value = "";
+    resultFilter = "delete"; rescuedPending = {}; renderGen++; delSeenAll = false;
     document.getElementById("homeScreen").appendChild(el.advPanel);
     el.advPanel.classList.add("hidden");
     el.progressBlock.classList.add("hidden");
@@ -3275,6 +3559,16 @@
     if (!p) return;
     const btn = e.target.closest("[data-act]");
     const act = btn ? btn.getAttribute("data-act") : null;
+    if (act === "group-ref") {
+      const refId = btn.getAttribute("data-ref-id");
+      if (refId) openViewer(refId, { preferGroup: true, gid: p.groupId });
+      return;
+    }
+    if (resultFilter !== "all" && (act === "view" || (!btn && e.target.closest(".thumb-wrap")))) {
+      const list = filteredListCache.length ? filteredListCache : filteredList();
+      openViewer(p.id, { list: list, scope: resultFilter });
+      return;
+    }
     // Tap card thumb (or 看大圖) opens viewer — not when hitting keep/delete/restore
     if (act === "view" || (!btn && e.target.closest(".thumb-wrap"))) {
       const block = card.closest(".group-block");
@@ -3284,7 +3578,9 @@
       return;
     }
     if (!btn) return;
-    if (act === "keep") { p.choice = "keep"; p.userTouched = true; }
+    if (act === "rescue") { p.choice = "keep"; p.userTouched = p.autoChoice !== "keep"; }
+    else if (act === "unrescue") { p.choice = "delete"; p.userTouched = p.autoChoice !== "delete"; }
+    else if (act === "keep") { p.choice = "keep"; p.userTouched = true; }
     else if (act === "delete") { p.choice = "delete"; p.userTouched = true; }
     else if (act === "restore") {
       p.userTouched = false;
@@ -3292,8 +3588,21 @@
     } else return;
     const th = thresholds();
     p.reason = computeReason(p, p.groupSize || 1, th);
+    if (resultFilter !== "all") {
+      // Keep the card in place with instant feedback; it leaves the list only on filter switch
+      rescuedPending[p.id] = true;
+      patchCardInDom(p);
+      updateSummaryCountsOnly();
+      await persistChoice(p);
+      return;
+    }
     await persistChoice(p);
     renderResult();
+  });
+  if (el.filterBar) el.filterBar.addEventListener("click", function (e) {
+    const b = e.target.closest("[data-filter]");
+    if (!b) return;
+    setResultFilter(b.getAttribute("data-filter"));
   });
 
   el.btnRestoreAll.addEventListener("click", async function () {
@@ -3306,11 +3615,13 @@
     });
     for (const p of photos) { if (p.analyzed) await persistChoice(p); }
     showToast("已全部還原為自動建議");
+    rescuedPending = {};
     renderResult();
   });
 
   el.btnConfirm.addEventListener("click", function () {
     if (!photos.length) return;
+    rescuedPending = {};
     showFinish = true;
     render();
   });
@@ -3372,6 +3683,11 @@
     viewerZoomTo: function (s, cx, cy) { zoomTo(s, cx, cy, false); },
     viewerResetZoom: function () { resetViewerZoom(false); },
     viewerStep: function (d) { viewerStep(d); },
+    getFilter: function () { return resultFilter; },
+    setFilter: function (f) { setResultFilter(f); },
+    getFilteredIds: function () { return filteredList().map(function (p) { return p.id; }); },
+    getViewerListIds: function () { return viewer.list.map(function (p) { return p.id; }); },
+    manualCount: function () { return manualCount(); },
 
 
     getDisplayQueueLength: function () { return displayEncodeQueue.length + displayEncodeInflight; },
