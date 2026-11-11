@@ -218,10 +218,13 @@
   @keyframes numFlash { 0% { background-color: rgba(22,163,74,.35); } 100% { background-color: transparent; } }
   .num-flash { animation: numFlash 600ms ease-out; border-radius: 4px; }
   .filter-opt.on .num-flash { animation: none; }
-  #summaryCounts strong, .filter-opt span { font-variant-numeric: tabular-nums; }
+  #summaryCounts strong, .filter-opt span, #progressText { font-variant-numeric: tabular-nums; }
   /* filtered cards */
-  .card.filtered .choice-badge { left: 10px; right: auto; }
-  .card.filtered .tag-row { left: 64px; right: 10px; justify-content: flex-end; }
+  /* v9c.1: badge top-left + tags top-right on every card (all / filtered / compact) */
+  .card .choice-badge { left: 10px; right: auto; }
+  .card .tag-row { left: 64px; right: 10px; justify-content: flex-end; }
+  .card-compact .choice-badge { left: 6px; right: auto; }
+  .card-compact .tag-row { left: 50px; right: 6px; top: 6px; justify-content: flex-end; }
   .card.filtered { transition: opacity 150ms, border-color 150ms; }
   .card.filtered { border-width: 2px; }
   .card.filtered.delete { border-color: #E5484D; }
@@ -292,8 +295,9 @@
     position: relative; width: 100%; background: var(--chip);
     aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center; overflow: hidden;
   }
+  .card .thumb-wrap { background: #EEF0F3; }
   .thumb-wrap img {
-    width: 100%; height: 100%; object-fit: cover; display: block;
+    width: 100%; height: 100%; object-fit: contain; display: block;
     position: absolute; inset: 0;
     opacity: 0;
   }
@@ -363,18 +367,18 @@
   }
   .expand-btn.open .chevron { transform: rotate(-135deg); margin-top: 6px; }
   .group-extras {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; align-items: start;
     margin-top: 8px;
   }
   .group-extras.hidden { display: none !important; }
   .card-compact { box-shadow: none; }
-  .card-compact .thumb-wrap { aspect-ratio: 1 / 1; border-radius: 0; }
+  .card-compact .thumb-wrap { border-radius: 0; }
   .card-compact .meta-compact { padding: 8px; }
   .card-compact .reason { font-size: 14px; margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .card-compact .seg-switch { max-width: none; width: 100%; height: 36px; min-width: 0; }
   .card-compact .seg-opt { min-height: 44px; font-size: 14px; }
   .card-compact .restore-link { min-height: 44px; font-size: 14px; padding: 8px 0; }
-  .card-compact .choice-badge { min-height: 28px; min-width: 36px; font-size: 14px; font-weight: 800; padding: 6px 8px; top: 6px; right: 6px; }
+  .card-compact .choice-badge { min-height: 28px; min-width: 36px; font-size: 14px; font-weight: 800; padding: 6px 8px; top: 6px; left: 6px; right: auto; }
 
   .footer {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
@@ -1175,6 +1179,47 @@
       });
     }
   }
+  /** v9d: ratio for cached items without aspW/aspH, read from the stored 256 thumb (same EXIF-rotated ratio). */
+  async function backfillAspectFromThumbs(list) {
+    const todo = list.filter(function (p) { return p.fromCache && !(p.aspW > 0 && p.aspH > 0) && p.thumbBlob; });
+    const CONC = 8;
+    const t0b = performance.now();
+    if (todo.length) el.progressText.textContent = "整理照片中… 0 / " + todo.length;
+    for (let i = 0; i < todo.length; i += CONC) {
+      await Promise.all(todo.slice(i, i + CONC).map(async function (p) {
+        try {
+          let w = 0, h = 0;
+          if (typeof createImageBitmap === "function") {
+            const bm = await createImageBitmap(p.thumbBlob);
+            w = bm.width; h = bm.height; if (bm.close) bm.close();
+          } else {
+            const u = URL.createObjectURL(p.thumbBlob);
+            try {
+              const im = new Image(); im.src = u; await im.decode();
+              w = im.naturalWidth; h = im.naturalHeight;
+            } finally { URL.revokeObjectURL(u); }
+          }
+          if (w > 0 && h > 0) { p.aspW = w; p.aspH = h; p._aspBackfilled = true; }
+        } catch (_) {}
+        if (!(p.aspW > 0) && p.file && typeof createImageBitmap === "function") {
+          // backup: thumb missing/corrupt — tiny decode of the original (EXIF orientation applied)
+          try {
+            const bm2 = await createImageBitmap(p.file, { imageOrientation: "from-image", resizeWidth: 64, resizeQuality: "low" });
+            if (bm2.width > 0 && bm2.height > 0) { p.aspW = bm2.width; p.aspH = bm2.height; p._aspBackfilled = true; }
+            if (bm2.close) bm2.close();
+          } catch (_) {}
+        }
+      }));
+      if (i % 32 === 0) {
+        el.progressText.textContent = "整理照片中… " + Math.min(i + CONC, todo.length) + " / " + todo.length;
+        el.progressBar.style.width = Math.round(Math.min(i + CONC, todo.length) / todo.length * 100) + "%";
+        await yieldToUI();
+      }
+    }
+    window.__aspBackfill = { n: todo.length, ms: Math.round(performance.now() - t0b) };
+    if (todo.length) { el.progressText.textContent = "整理分組中… · 剩餘 0 張"; el.progressBar.style.width = "100%"; }
+    return todo.length;
+  }
   function persistDisplayBlob(p) {
     if (!p || !p.id || !p.displayBlob || !p.hash) return;
     idbGet(p.id).then(function (prev) {
@@ -1183,9 +1228,10 @@
         v: ANALYSIS_VERSION, sharp: p.sharp, mean: p.mean, overPct: p.overPct, underPct: p.underPct,
         grayStd: p.grayStd, edgeEnergy: p.edgeEnergy, flat: !!p.flat,
         hash: p.hash, aHash: p.aHash, thumbBlob: p.thumbBlob,
-        captureMs: p.captureMs, dateSource: p.dateSource,
+        captureMs: p.captureMs, dateSource: p.dateSource, aspW: p.aspW || 0, aspH: p.aspH || 0,
       };
       analysis.displayBlob = p.displayBlob;
+      if (!(analysis.aspW > 0) && p.aspW > 0) { analysis.aspW = p.aspW; analysis.aspH = p.aspH; }
       analysis.thumbBlob = p.thumbBlob || analysis.thumbBlob;
       return idbSet(p.id, {
         choice: p.choice, userTouched: !!p.userTouched, ts: Date.now(), analysis: analysis,
@@ -1217,6 +1263,11 @@
       img.setAttribute("data-loaded", "1");
       img.setAttribute("data-nw", String(img.naturalWidth || ""));
       if (ph) ph.classList.add("hidden");
+      if (!(p.aspW > 0) && img.naturalWidth && img.naturalHeight) {
+        p.aspW = img.naturalWidth; p.aspH = img.naturalHeight;
+        const wrap = img.closest(".thumb-wrap");
+        if (wrap) wrap.style.aspectRatio = cardRatio(p).toFixed(4);
+      }
     }
     if (img.src === url && img.complete && img.naturalWidth) { show(); return; }
     img.classList.remove("is-ready");
@@ -1528,6 +1579,7 @@
     item.thumbUrl = null; item.displayUrl = null;
     item.captureMs = typeof a.captureMs === "number" ? a.captureMs : item.lastModified;
     item.dateSource = a.dateSource === "exif" ? "exif" : "file";
+    item.aspW = a.aspW || 0; item.aspH = a.aspH || 0;
     item.analyzed = true; item.fromCache = true;
     return true;
   }
@@ -1668,6 +1720,7 @@
     const analyzeCtx = analyzeCanvas.getContext("2d", { willReadFrequently: true, alpha: false });
     try {
       const analyzed = drawOnto(analyzeCanvas, analyzeCtx, img, ANALYZE_MAX);
+      item.aspW = analyzed.w; item.aspH = analyzed.h; // v9c: card frame ratio (display only)
       try { img.src = ""; img.removeAttribute("src"); } catch (_) {}
       await yieldToUI();
       const imageData = analyzeCtx.getImageData(0, 0, analyzed.w, analyzed.h);
@@ -1911,7 +1964,7 @@
         grayStd: p.grayStd, edgeEnergy: p.edgeEnergy, flat: !!p.flat,
         hash: p.hash, aHash: p.aHash,
         thumbBlob: p.thumbBlob, displayBlob: p.displayBlob,
-        captureMs: p.captureMs, dateSource: p.dateSource,
+        captureMs: p.captureMs, dateSource: p.dateSource, aspW: p.aspW || 0, aspH: p.aspH || 0,
       };
     }
     await idbSet(p.id, payload);
@@ -2126,6 +2179,16 @@
     return '<button type="button" class="btn-rescue' + (done ? " done" : "") + '" data-act="' + (done ? "unrescue" : "rescue") + '">' +
       (done ? "已救回・復原" : "救回") + "</button>";
   }
+  /** v9c: card frame ratio = photo ratio clamped to 16:9 … 3:4 (iPhone portrait fills exactly); compact uses same rule. */
+  const CARD_RATIO_MAX = 16 / 9, CARD_RATIO_MIN = 3 / 4;
+  function cardRatio(p) {
+    if (!p || !(p.aspW > 0) || !(p.aspH > 0)) return null;
+    return Math.min(CARD_RATIO_MAX, Math.max(CARD_RATIO_MIN, p.aspW / p.aspH));
+  }
+  function thumbWrapOpen(p, compact) {
+    const r = cardRatio(p);
+    return '<div class="thumb-wrap"' + (r ? ' style="aspect-ratio:' + r.toFixed(4) + '"' : "") + ">";
+  }
   function cardHtml(p, opts) {
     opts = opts || {};
     const compact = !!(opts && opts.compact);
@@ -2151,7 +2214,7 @@
     if (compact) {
       return (
         '<article class="' + cls.join(" ") + '" data-id="' + escapeAttr(p.id) + '" tabindex="-1">' +
-          '<div class="thumb-wrap">' +
+          thumbWrapOpen(p, true) +
             '<span class="thumb-placeholder" aria-hidden="true"></span>' +
             '<img data-pid="' + escapeAttr(p.id) + '" data-kind="display" alt="" width="720" height="540" />' +
             '<span class="choice-badge ' + badgeCls + '">' + badgeText + "</span>" +
@@ -2166,7 +2229,7 @@
     }
     return (
       '<article class="' + cls.join(" ") + '" data-id="' + escapeAttr(p.id) + '" tabindex="-1">' +
-        '<div class="thumb-wrap">' +
+        thumbWrapOpen(p, false) +
           '<span class="thumb-placeholder" aria-hidden="true"></span>' +
           '<img data-pid="' + escapeAttr(p.id) + '" data-kind="display" alt="" width="720" height="540" />' +
           '<span class="choice-badge ' + badgeCls + '">' + badgeText + "</span>" +
@@ -2681,12 +2744,13 @@
     }
     el.progressText.textContent = "整理分組中… · 剩餘 0 張";
     await yieldToUI();
+    await backfillAspectFromThumbs(photos); // v9d: old v9 caches lack aspW/aspH — fill before first render
     const persistEarly = (async function () {
       const entries = [];
       for (let pi = 0; pi < photos.length; pi++) {
         const p = photos[pi];
         if (!p.analyzed || !p.hash || !p.thumbBlob) continue;
-        if (p.fromCache && !p.userTouched && p.choice === p.autoChoice) continue;
+        if (p.fromCache && !p._aspBackfilled && !p.userTouched && p.choice === p.autoChoice) continue;
         entries.push({
           key: p.id,
           value: {
@@ -2696,7 +2760,7 @@
               grayStd: p.grayStd, edgeEnergy: p.edgeEnergy, flat: !!p.flat,
               hash: p.hash, aHash: p.aHash,
               thumbBlob: p.thumbBlob, displayBlob: p.displayBlob || null,
-              captureMs: p.captureMs, dateSource: p.dateSource,
+              captureMs: p.captureMs, dateSource: p.dateSource, aspW: p.aspW || 0, aspH: p.aspH || 0,
             },
           },
         });
