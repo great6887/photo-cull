@@ -24,6 +24,16 @@
     --del: #E5484D;
     --warn: #C4871A;
     --chip: #EEF0F3;
+    --keep-text: #15803D;
+    --keep-fill: #E8F6EC;
+    --keep-fill-sub: #F3FAF5;
+    --del-text: #C62D32;
+    --del-fill: #FDECEC;
+    --del-fill-sub: #FFF4F4;
+    --amber-bg: #FEF3E2;
+    --amber-text: #92400E;
+    --chip-neutral: #F1F2F4;
+    --chip-neutral-text: #374151;
     --shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 16px rgba(15, 23, 42, 0.06);
     --footer-bg: rgba(246, 247, 249, 0.94);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -77,7 +87,8 @@
   .btn-primary { background: var(--accent); color: #fff; }
   .btn-primary:active { background: var(--accent-press); }
   .btn-ghost {
-    background: var(--chip); color: var(--text); border: 1px solid var(--border); font-weight: 600;
+    background: #fff; color: var(--text); border: 1px solid var(--border);
+    font-weight: 600; font-size: 15px;
   }
   .btn-quiet {
     background: transparent; color: var(--muted); border: 1px solid var(--border); font-weight: 600; font-size: 15px;
@@ -100,6 +111,14 @@
   }
   .pick-hero .file-btn input {
     position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;
+  }
+  .pick-hero #progressBlock {
+    max-width: 320px; width: 100%; margin: 0;
+  }
+  .pick-hero.is-busy .file-btn,
+  .pick-hero.is-busy #btnFaceExprHome,
+  .pick-hero.is-busy #crashHint {
+    display: none !important;
   }
   .home-bottom {
     margin-top: auto; padding: 8px 0 calc(8px + var(--safe-bottom));
@@ -137,9 +156,90 @@
   .progress-wrap { margin-top: 12px; width: 100%; }
   .progress { height: 8px; background: var(--chip); border-radius: 999px; overflow: hidden; }
   .progress > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .12s; }
+  @keyframes progressSlide {
+    0% { transform: translateX(-120%); }
+    100% { transform: translateX(280%); }
+  }
+  .progress.indet > i {
+    width: 36%; transition: none;
+    animation: progressSlide 1.15s ease-in-out infinite alternate;
+  }
   .status { font-size: 14px; color: var(--muted); margin-top: 8px; }
   .progress-row { display: flex; gap: 8px; margin-top: 12px; }
   .progress-row .btn { flex: 1; min-height: 44px; }
+
+  .reason-chips {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin: 0 0 6px; min-width: 0; max-width: 100%;
+  }
+  .chip {
+    box-sizing: border-box;
+    height: 32px; padding: 0 12px; border-radius: 999px;
+    font-size: 15px; line-height: 32px; font-family: inherit;
+    display: inline-flex; align-items: center; justify-content: center;
+    white-space: nowrap; flex: 0 0 auto; max-width: 100%;
+    border: 0; margin: 0; background: var(--chip-neutral); color: var(--chip-neutral-text);
+  }
+  .chip-main { font-weight: 700; }
+  .chip-sub, .chip-more { font-weight: 600; }
+  .chip-main.tone-keep { background: var(--keep-fill); color: var(--keep-text); }
+  .chip-sub.tone-keep { background: var(--keep-fill-sub); color: var(--keep-text); }
+  .chip-main.tone-del { background: var(--del-fill); color: var(--del-text); }
+  .chip-sub.tone-del { background: var(--del-fill-sub); color: var(--del-text); }
+  .chip-amber { background: var(--amber-bg); color: var(--amber-text); }
+  .chip-more { background: var(--chip-neutral); color: var(--chip-neutral-text); }
+  button.chip-jump {
+    cursor: pointer; -webkit-appearance: none; appearance: none;
+    position: relative; gap: 2px; padding-right: 8px; color: inherit; background: inherit;
+  }
+  button.chip-jump::after {
+    content: ""; position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%; min-width: 44px; height: 44px;
+  }
+  .chip-jump .chevron {
+    font-size: 13px; font-weight: 700; line-height: 1;
+    opacity: 0.7; margin-left: 1px;
+  }
+  .reason-expl {
+    font-size: 14px; color: var(--muted); line-height: 1.4;
+    margin: 0 0 10px; max-width: 100%;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .pos-tag {
+    position: absolute; top: 10px; right: 10px; z-index: 2;
+    background: rgba(255, 255, 255, 0.9); color: #14171C;
+    font-size: 13px; font-weight: 600; line-height: 1.2;
+    border-radius: 8px; padding: 4px 8px; pointer-events: none;
+  }
+  .pos-line {
+    font-size: 13px; color: var(--muted); font-weight: 600;
+    line-height: 1.3; margin: 0 0 6px;
+  }
+  .expr-changed-flag {
+    display: inline-flex; align-items: center;
+    height: 28px; padding: 0 10px; margin: 0 0 8px;
+    border-radius: 999px; font-size: 13px; font-weight: 600;
+    background: var(--keep-fill); color: var(--keep-text);
+  }
+  .group-block .expr-changed-flag { margin: 0 0 8px; }
+  .card-compact .reason-chips { margin: 0; }
+  .card-compact .chip {
+    height: 28px; line-height: 28px; font-size: 13px;
+    padding: 0 6px; min-width: 0; max-width: 100%;
+    overflow: hidden; text-overflow: ellipsis;
+    justify-content: flex-start; flex: 0 1 auto;
+  }
+  /* v10o: ellipsis lives on an inner block span (text-overflow never applies to a flex container's text). */
+  .card-compact .chip-text {
+    display: block; min-width: 0; max-width: 100%;
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis; text-align: left;
+  }
+  .card-compact .meta-compact { min-width: 0; max-width: 100%; }
+  .card-compact .expr-changed-flag {
+    height: auto; padding: 0; margin: 6px 0 0;
+    background: none; font-size: 13px;
+  }
 
   .section-title { font-size: 20px; font-weight: 700; margin: 8px 0 12px; letter-spacing: -0.02em; }
   .del-headline {
@@ -163,8 +263,16 @@
   }
   #summaryCounts {
     flex: 1; min-width: 0; font-size: 15px; color: var(--muted);
+    overflow: hidden;
+  }
+  #summaryCounts .summary-nums {
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
+  #summaryCounts .expr-swap-line {
+    display: block; font-size: 14px; font-weight: 600; color: #15803D;
+    line-height: 1.3; margin-top: 1px;
+  }
+  body.has-expr-swap { --summary-h: 72px; }
   #summaryCounts strong { font-size: 17px; font-weight: 800; }
   #summaryCounts .c-keep strong { color: #15803D; }
   #summaryCounts .c-del strong { color: var(--del); }
@@ -283,10 +391,11 @@
   .group-ref {
     display: flex; align-items: center; gap: 10px; width: 100%; margin: 0 0 10px; min-height: 44px;
     font-size: 14px; color: var(--muted); line-height: 1.35;
+    border: 0; background: none; padding: 0; font-family: inherit; text-align: left; cursor: pointer;
   }
   .group-ref .gr-thumb {
-    flex-shrink: 0; width: 56px; height: 42px; border-radius: 6px; overflow: hidden; background: #E8EAED;
-    border: none; padding: 0; cursor: pointer; position: relative;
+    flex-shrink: 0; width: 48px; height: 36px; border-radius: 6px; overflow: hidden; background: #E8EAED;
+    border: none; padding: 0; position: relative; pointer-events: none;
   }
   .group-ref .gr-thumb::before { content: ""; position: absolute; inset: -1px -0px; }
   .group-ref .gr-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -408,6 +517,7 @@
     margin-top: 8px;
   }
   .group-extras.hidden { display: none !important; }
+  .card.jump-hl { outline: 2px solid var(--accent); outline-offset: 2px; }
   .card-compact { box-shadow: none; }
   .card-compact .thumb-wrap { border-radius: 0; }
   .card-compact .meta-compact { padding: 8px; }
@@ -697,12 +807,13 @@
         <i class="ios-switch" id="faceExprSwitchHome" aria-hidden="true" aria-checked="true" class="is-on"></i>
       </button>
       <p id="crashHint" class="crash-hint hidden" role="status" aria-live="polite">上次分析中斷，已先關閉判斷表情，可手動打開</p>
-    </div>
-    <div id="progressBlock" class="progress-wrap panel hidden">
-      <div class="progress"><i id="progressBar"></i></div>
-      <div class="status" id="progressText">準備中…</div>
-      <div class="progress-row">
-        <button type="button" class="btn btn-ghost" id="btnPause">暫停</button>
+      <div id="progressBlock" class="progress-wrap panel hidden">
+        <div class="progress"><i id="progressBar"></i></div>
+        <div class="status" id="progressText">準備中…</div>
+        <div class="progress-row">
+          <button type="button" class="btn btn-ghost hidden" id="btnSkipFaceWait">先不判斷表情，直接開始</button>
+          <button type="button" class="btn btn-ghost" id="btnPause">暫停</button>
+        </div>
       </div>
     </div>
     <div id="onlyBadPanel" class="only-bad-panel hidden" role="status">
@@ -887,6 +998,8 @@
     progressBlock: document.getElementById("progressBlock"),
     progressBar: document.getElementById("progressBar"),
     progressText: document.getElementById("progressText"),
+    progressTrack: document.querySelector("#progressBlock .progress"),
+    btnSkipFaceWait: document.getElementById("btnSkipFaceWait"),
     btnPause: document.getElementById("btnPause"),
     cards: document.getElementById("cards"),
     summaryBar: document.getElementById("summaryBar"),
@@ -1306,6 +1419,7 @@
     return false;
   }
   function ensureFaceScratchWorker() {
+    if (!allowPoolWorkers()) return null;
     if (faceScratchWorker) return faceScratchWorker;
     try {
       const url = URL.createObjectURL(new Blob([FACE_SCRATCH_WORKER_CODE], { type: "text/javascript" }));
@@ -1446,14 +1560,16 @@
   }
 
   async function faceScratchDropAll() {
-    try { await faceScratchRpc({ op: "drop" }); }
-    catch (err) { console.warn("faceScratch drop", err); }
-    // Close worker connections so deleteDatabase is not blocked and no empty
-    // scratch DB is left behind after cleanup / 重選照片 / startup.
+    // Do not start the worker just to drop: if it was never created (判斷表情
+    // OFF, or first load), indexedDB.deleteDatabase is enough for leftovers.
     if (faceScratchWorker) {
+      try { await faceScratchRpc({ op: "drop" }); }
+      catch (err) { console.warn("faceScratch drop", err); }
       try { faceScratchWorker.terminate(); } catch (_) {}
       faceScratchWorker = null;
     }
+    // Close any leftover connections so deleteDatabase is not blocked and no empty
+    // scratch DB is left behind after cleanup / 重選照片 / startup.
     try {
       await Promise.race([
         new Promise(function (resolve) {
@@ -1859,8 +1975,13 @@
     }
     markReselectPlaceholder(img);
   }
+  // v10o: main-thread metrics (判斷表情 OFF, 0 workers) reuse one gray / one scaled scratch buffer
+  // instead of allocating ~0.94MB of Float32Array per photo. Views are exact-length, values identical.
+  let metricGrayScratch = new Float32Array(0), metricScaledScratch = new Float32Array(0);
   function toGray(data) {
-    const g = new Float32Array(data.length / 4);
+    const n = data.length / 4;
+    if (metricGrayScratch.length < n) metricGrayScratch = new Float32Array(n);
+    const g = metricGrayScratch.length === n ? metricGrayScratch : metricGrayScratch.subarray(0, n);
     for (let i = 0, j = 0; i < data.length; i += 4, j++) {
       g[j] = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
     }
@@ -1872,7 +1993,8 @@
       const scale = 256 / Math.max(w, h);
       sw = Math.max(1, Math.round(w * scale));
       sh = Math.max(1, Math.round(h * scale));
-      const scaled = new Float32Array(sw * sh);
+      if (metricScaledScratch.length < sw * sh) metricScaledScratch = new Float32Array(sw * sh);
+      const scaled = metricScaledScratch.length === sw * sh ? metricScaledScratch : metricScaledScratch.subarray(0, sw * sh);
       for (let y = 0; y < sh; y++) {
         for (let x = 0; x < sw; x++) {
           scaled[y * sw + x] = gray[Math.min(h - 1, Math.floor(y / scale)) * w + Math.min(w - 1, Math.floor(x / scale))];
@@ -1941,6 +2063,44 @@
   function hashDistance(a, b) {
     return Math.min(hamming(a.hash, b.hash), hamming(a.aHash, b.aHash));
   }
+  // Same sampling as the metric worker (not the canvas dHash/aHash helpers).
+  // Used when 判斷表情 is OFF so hashes stay identical without starting a Worker.
+  function dHashFromGray(gray, w, h) {
+    const bits = [];
+    for (let row = 0; row < 8; row++) for (let col = 0; col < 8; col++) {
+      const x1 = Math.floor((col / 9) * w), x2 = Math.floor(((col + 1) / 9) * w), y = Math.floor((row / 8) * h);
+      const g1 = gray[y * w + Math.min(w - 1, x1)], g2 = gray[y * w + Math.min(w - 1, x2)];
+      bits.push(g1 < g2 ? "1" : "0");
+    }
+    return bits.join("");
+  }
+  function aHashFromGray(gray, w, h) {
+    const cells = []; let sum = 0;
+    for (let row = 0; row < 8; row++) for (let col = 0; col < 8; col++) {
+      const x0 = Math.floor((col / 8) * w), x1 = Math.floor(((col + 1) / 8) * w);
+      const y0 = Math.floor((row / 8) * h), y1 = Math.floor(((row + 1) / 8) * h);
+      let s = 0, c = 0;
+      for (let y = y0; y < Math.max(y0 + 1, y1); y++) for (let x = x0; x < Math.max(x0 + 1, x1); x++) {
+        s += gray[Math.min(h - 1, y) * w + Math.min(w - 1, x)]; c++;
+      }
+      const v = s / c; cells.push(v); sum += v;
+    }
+    const avg = sum / 64;
+    return cells.map(function (v) { return v >= avg ? "1" : "0"; }).join("");
+  }
+  function metricsOnMain(imageData, w, h) {
+    const gray = toGray(imageData.data);
+    const sharp = laplacianVariance(gray, w, h);
+    const exp = exposureStats(gray);
+    return {
+      sharp: sharp, mean: exp.mean, std: exp.std, edgeEnergy: Math.sqrt(Math.max(0, sharp)),
+      overPct: exp.overPct, underPct: exp.underPct,
+      hash: dHashFromGray(gray, w, h), aHash: aHashFromGray(gray, w, h)
+    };
+  }
+  // Pool workers (metric, encode, face-scratch) start lazily, and only while
+  // this run is in 判斷表情 ON (runFaceMode). OFF runs must construct 0 Workers.
+  function allowPoolWorkers() { return !!runFaceMode; }
   function qualityScore(p) {
     return p.sharp - Math.abs(p.mean - 120) * 0.5 - p.overPct - p.underPct * 0.5;
   }
@@ -2005,6 +2165,7 @@
   let metricWorker = null, workerReqId = 0;
   const workerWaiters = {};
   function getMetricWorker() {
+    if (!allowPoolWorkers()) return null;
     if (metricWorker) return metricWorker;
     try {
       const url = URL.createObjectURL(new Blob([workerCode], { type: "text/javascript" }));
@@ -2047,6 +2208,7 @@
   const encodeWaiters = {};
   const ENCODE_POOL = 6;
   function ensureEncodeWorkers() {
+    if (!allowPoolWorkers()) return null;
     if (encodeWorkers && encodeWorkers.length) return encodeWorkers;
     try {
       if (typeof OffscreenCanvas !== "function") return null;
@@ -2074,9 +2236,23 @@
     encodeRr++;
     return pick;
   }
+  function jpegOnMainFromBlob(blob, quality, maxSide) {
+    // v9e path: one reused Image via withDecodedImage; drop the decoded
+    // frame before JPEG encode so this display path never holds an extra frame.
+    const canvas = acquireCanvas();
+    return withDecodedImage(blob, function (img) {
+      const ctx = canvas.getContext("2d", { alpha: false });
+      drawOnto(canvas, ctx, img, maxSide || DISPLAY_MAX);
+    }).then(function () {
+      return canvasToJpegBlob(canvas, quality);
+    }).catch(function () { return null; }).then(function (out) {
+      releaseCanvas(canvas);
+      return out;
+    });
+  }
   function jpegViaWorkerFromBlob(blob, quality, maxSide) {
-    const worker = getEncodeWorkerRoundRobin();
-    if (!worker) return Promise.resolve(null);
+    const worker = allowPoolWorkers() ? getEncodeWorkerRoundRobin() : null;
+    if (!worker) return jpegOnMainFromBlob(blob, quality, maxSide);
     const id = ++encodeReqId;
     return new Promise(function (resolve) {
       encodeWaiters[id] = resolve;
@@ -2091,7 +2267,7 @@
 
 
   function jpegViaWorkerFromBitmap(bmp, quality) {
-    const worker = (typeof getEncodeWorkerRoundRobin === "function" ? getEncodeWorkerRoundRobin() : getEncodeWorker());
+    const worker = allowPoolWorkers() ? (typeof getEncodeWorkerRoundRobin === "function" ? getEncodeWorkerRoundRobin() : getEncodeWorker()) : null;
     if (!worker || !bmp) {
       try { if (bmp && bmp.close) bmp.close(); } catch (_) {}
       return Promise.resolve(null);
@@ -2111,7 +2287,7 @@
     });
   }
   function jpegViaWorkerFromCanvas(canvas, quality) {
-    const worker = (typeof getEncodeWorkerRoundRobin === "function" ? getEncodeWorkerRoundRobin() : getEncodeWorker());
+    const worker = allowPoolWorkers() ? (typeof getEncodeWorkerRoundRobin === "function" ? getEncodeWorkerRoundRobin() : getEncodeWorker()) : null;
     if (!worker || typeof createImageBitmap !== "function") {
       return canvasToJpegBlob(canvas, quality);
     }
@@ -2132,13 +2308,9 @@
   }
 
   function metricsViaWorker(imageData, w, h) {
-    const worker = getMetricWorker();
+    const worker = allowPoolWorkers() ? getMetricWorker() : null;
     if (!worker) {
-      const gray = toGray(imageData.data);
-      const sharp = laplacianVariance(gray, w, h);
-      return Promise.resolve({
-        sharp: sharp, ...exposureStats(gray), edgeEnergy: Math.sqrt(Math.max(0, sharp)), hash: null, aHash: null
-      });
+      return Promise.resolve(metricsOnMain(imageData, w, h));
     }
     const id = ++workerReqId;
     return new Promise(function (resolve) {
@@ -2206,7 +2378,7 @@
           function readIFD(ifd) {
             if (ifd < 0 || ifd + 2 >= u8.length) return null;
             const n = rd16(ifd);
-            let dateStr = null;
+            let dto = null, dt = null;
             let exifOff = null;
             for (let i = 0; i < n; i++) {
               const e = ifd + 2 + i * 12;
@@ -2221,17 +2393,18 @@
               if (tag === 0x9003 || tag === 0x0132) {
                 let s = "";
                 for (let k = 0; k < Math.min(cnt - 1, 19); k++) s += String.fromCharCode(u8[dataAt + k]);
-                if (/^\d{4}:\d{2}:\d{2} \d{2}:\d{2}:\d{2}$/.test(s)) dateStr = s;
+                if (/^\d{4}:\d{2}:\d{2} \d{2}:\d{2}:\d{2}$/.test(s)) {
+                  if (tag === 0x9003) dto = s; else dt = s;
+                }
               }
             }
-            return { dateStr: dateStr, exifOff: exifOff };
+            return { dto: dto, dt: dt, exifOff: exifOff };
           }
+          // v10p: DateTimeOriginal (0x9003, IFD0 or Exif sub-IFD) first; DateTime (0x0132) only
+          // when no DateTimeOriginal exists (DateTime can be the edit time on edited photos).
           const ifd0res = readIFD(ifd0);
-          let dateStr = ifd0res && ifd0res.dateStr;
-          if (!dateStr && ifd0res && ifd0res.exifOff) {
-            const sub = readIFD(ifd0res.exifOff);
-            if (sub && sub.dateStr) dateStr = sub.dateStr;
-          }
+          const sub = ifd0res && ifd0res.exifOff ? readIFD(ifd0res.exifOff) : null;
+          const dateStr = (ifd0res && ifd0res.dto) || (sub && sub.dto) || (ifd0res && ifd0res.dt) || (sub && sub.dt) || null;
           if (dateStr) {
             const parts = dateStr.split(/[: ]/);
             const iso = parts[0] + "-" + parts[1] + "-" + parts[2] + "T" + parts[3] + ":" + parts[4] + ":" + parts[5];
@@ -2343,7 +2516,10 @@
     return out;
   }
   faceRuntimeStats.ready = false;
+  let faceReadyAppliesThisRun = false;
   function showFaceReadyToast(msg) {
+    // Do not show "下次整理會套用" when this analysis waited for the model and will apply it now.
+    if (!msg && faceReadyAppliesThisRun) return;
     const toast=document.getElementById("faceReadyToast");
     if(msg) toast.textContent=msg;
     else if(!toast.textContent || toast.dataset.defaultMsg) toast.textContent=toast.dataset.defaultMsg||"臉部判斷已就緒，下次整理會套用";
@@ -2366,8 +2542,8 @@
   }
   async function faceAssetController() {
     if (!("serviceWorker" in navigator)) throw new Error("Offline face assets require HTTPS or localhost service workers");
-    const expected=new URL("./sw.v10k.js",location.href).href;
-    if(navigator.serviceWorker.controller?.scriptURL !== expected) await navigator.serviceWorker.register("./sw.v10k.js");
+    const expected=new URL("./sw.v10q.js",location.href).href;
+    if(navigator.serviceWorker.controller?.scriptURL !== expected) await navigator.serviceWorker.register("./sw.v10q.js");
     if (navigator.serviceWorker.controller?.scriptURL !== expected) await new Promise(resolve=>{
       function ready(){if(navigator.serviceWorker.controller?.scriptURL===expected){navigator.serviceWorker.removeEventListener("controllerchange",ready);resolve();}}
       navigator.serviceWorker.addEventListener("controllerchange",ready); ready();
@@ -2378,11 +2554,100 @@
     return new Promise((resolve,reject)=>{
       const channel=new MessageChannel();
       channel.port1.onmessage=e=>{channel.port1.close();e.data.ok?resolve():reject(new Error(e.data.error));};
-      controller.postMessage({type:"v10k-face-assets",simd},[channel.port2]);
+      controller.postMessage({type:"v10q-face-assets",simd},[channel.port2]);
     });
+  }
+  const FACE_MODEL_URL = "./vendor/v10/face_landmarker.task";
+  // Fallback sizes (bytes) when the response has no Content-Length. Used only for the progress label.
+  const FACE_ASSET_BYTES = {
+    "./vendor/v10/face_landmarker.task": 3758596,
+    "./vendor/v10/tasks-vision/wasm/vision_wasm_internal.js": 204284,
+    "./vendor/v10/tasks-vision/wasm/vision_wasm_internal.wasm": 9574032,
+    "./vendor/v10/tasks-vision/wasm/vision_wasm_nosimd_internal.js": 204137,
+    "./vendor/v10/tasks-vision/wasm/vision_wasm_nosimd_internal.wasm": 9448638
+  };
+  let modelWaitActive = false;
+  function formatMb(bytes) {
+    return (Math.round(bytes / 1048576 * 10) / 10).toFixed(1);
+  }
+  function updateModelDownloadProgress(received, total) {
+    if (!modelWaitActive) return;
+    const track = el.progressTrack || (el.progressBar && el.progressBar.parentElement);
+    if (total > 0) {
+      if (track) track.classList.remove("indet");
+      if (el.progressBar) el.progressBar.style.width = Math.min(100, Math.round(received / total * 100)) + "%";
+      if (el.progressText) el.progressText.textContent = "準備表情模型中… " + formatMb(received) + " / " + formatMb(total) + " MB";
+    } else {
+      if (track) track.classList.add("indet");
+      if (el.progressBar) el.progressBar.style.width = "36%";
+      if (el.progressText) el.progressText.textContent = "準備表情模型中…";
+    }
+  }
+  async function fetchBodyWithProgress(url, onChunk, keep) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Asset fetch " + res.status + " " + url);
+    const declared = Number(res.headers.get("Content-Length") || 0);
+    if (!res.body || !res.body.getReader) {
+      const buf = new Uint8Array(await res.arrayBuffer());
+      onChunk(buf.byteLength, declared || buf.byteLength);
+      return keep ? buf : null;
+    }
+    const reader = res.body.getReader();
+    const chunks = keep ? [] : null;
+    let received = 0, lastYield = 0;
+    for (;;) {
+      const step = await reader.read();
+      if (step.done) break;
+      if (chunks) chunks.push(step.value);
+      received += step.value.byteLength;
+      onChunk(received, declared);
+      const now = typeof performance !== "undefined" ? performance.now() : 0;
+      if (now - lastYield > 80) { lastYield = now; await yieldToUI(); }
+    }
+    if (!keep) return null;
+    const buf = new Uint8Array(received);
+    let off = 0;
+    for (let i = 0; i < chunks.length; i++) { buf.set(chunks[i], off); off += chunks[i].byteLength; }
+    return buf;
+  }
+  async function loadFaceAssetsWithProgress(modelUrl, otherUrls) {
+    const parts = [{ url: modelUrl, keep: true }].concat(otherUrls.map(function (u) { return { url: u, keep: false }; }));
+    const rec = parts.map(function () { return 0; });
+    const tot = parts.map(function (p) { return FACE_ASSET_BYTES[p.url] || 0; });
+    const known = parts.map(function (p) { return tot[parts.indexOf(p)] > 0; });
+    // tot/known initialized from fallback map; Content-Length overrides when present.
+    for (let i = 0; i < parts.length; i++) known[i] = tot[i] > 0;
+    function emit() {
+      let r = 0, t = 0, allKnown = true;
+      for (let i = 0; i < parts.length; i++) {
+        r += rec[i];
+        if (known[i]) t += tot[i];
+        else allKnown = false;
+      }
+      updateModelDownloadProgress(r, allKnown ? t : 0);
+    }
+    emit();
+    const bufs = await Promise.all(parts.map(function (p, i) {
+      return fetchBodyWithProgress(p.url, function (got, declared) {
+        rec[i] = got;
+        if (declared > 0) { tot[i] = declared; known[i] = true; }
+        emit();
+      }, p.keep).then(function (buf) {
+        if (buf) rec[i] = buf.byteLength;
+        if (!known[i] && rec[i]) { tot[i] = rec[i]; known[i] = true; }
+        emit();
+        return buf;
+      });
+    }));
+    return bufs[0];
   }
   function getFaceTask() {
     if (!faceTaskPromise) faceTaskPromise = (async function () {
+      if (window.__PHOTO_CULL_HOLD_FACE) {
+        await new Promise(function (res, rej) {
+          window.__photoCullHold = { release: res, fail: rej };
+        });
+      }
       const start = performance.now();
       const controller=await faceAssetController();
       const mp = await import("./vendor/v10/tasks-vision/vision_bundle.mjs");
@@ -2390,11 +2655,16 @@
       const supported=await mp.FilesetResolver.isSimdSupported();
       const simd=new URLSearchParams(location.search).get("faceWasm") === "nosimd" ? false : supported;
       faceRuntimeStats.variant=simd?"simd":"nosimd";
-      await precacheFaceVariant(controller,simd);
       const name=simd?"vision_wasm_internal":"vision_wasm_nosimd_internal";
-      const fs={wasmLoaderPath:"./vendor/v10/tasks-vision/wasm/"+name+".js",wasmBinaryPath:"./vendor/v10/tasks-vision/wasm/"+name+".wasm"};
+      const wasmJs="./vendor/v10/tasks-vision/wasm/"+name+".js";
+      const wasmBin="./vendor/v10/tasks-vision/wasm/"+name+".wasm";
+      // Stream the model (keep the buffer for MediaPipe) and the wasm files (count only;
+      // the service worker caches them). Progress is shown only while the wait UI is up.
+      const modelBuf = await loadFaceAssetsWithProgress(FACE_MODEL_URL, [wasmJs, wasmBin]);
+      await precacheFaceVariant(controller,simd);
+      const fs={wasmLoaderPath:wasmJs,wasmBinaryPath:wasmBin};
       const task = await mp.FaceLandmarker.createFromOptions(fs, {
-        baseOptions: { modelAssetPath: "./vendor/v10/face_landmarker.task", delegate: "CPU" },
+        baseOptions: { modelAssetBuffer: modelBuf, delegate: "CPU" },
         runningMode: "IMAGE", numFaces: 5, outputFaceBlendshapes: true
       });
       faceRuntimeStats.loadMs = performance.now() - start;
@@ -2570,7 +2840,7 @@
      * ANALYSIS DECODE — DO NOT REPLACE with createImageBitmap (or any other resize decoder).
      * createImageBitmap(file) then drawImage-to-512 changes perceptual hashes by ~18–35 bits vs
      * v5's HTML Image → canvas@512 path, which caused ~388 keep/delete label flips in v6/v7.
-     * Always: loadImageFromFile (HTML Image + img.decode) → drawImage at ANALYZE_MAX (512).
+     * Always: withDecodedImage (one pooled HTML Image + img.decode) → drawImage at ANALYZE_MAX (512).
      * v8d: cold path encodes ONLY the 256 finish thumb from this canvas. Result-card 720 JPEGs
      * are produced lazily near the viewport (never feed hashes).
      */
@@ -2760,6 +3030,143 @@
     return "單張清晰保留";
   }
 
+  // Group index N and size M for 「第 N/M 張」. N is 1-based in capture-time
+  // then filename order (not keep-first, not filename-only). Singletons are 1/1.
+  function assignGroupPositions(g) {
+    const ordered = g.slice().sort(function (a, b) {
+      const dt = photoTime(a) - photoTime(b);
+      return dt || a.name.localeCompare(b.name);
+    });
+    for (let i = 0; i < ordered.length; i++) ordered[i].groupPos = i + 1;
+    const kept = g.find(function (x) { return x.isBest; }) || g[0];
+    g.forEach(function (p) {
+      p.groupKeptPos = kept ? kept.groupPos : null;
+      p.groupKeptId = kept ? kept.id : null;
+    });
+  }
+  function reasonChip(code, params) {
+    const chip = { code: code };
+    if (params && Object.keys(params).length) chip.params = params;
+    return chip;
+  }
+  function exposureCode(q) {
+    if (q.over) return "tooBright";
+    if (q.under) return "tooDark";
+    return "";
+  }
+  function dupOfParams(group) {
+    const kept = group.find(function (x) { return x.isBest; }) || group[0];
+    return { id: kept.id, n: kept.groupPos };
+  }
+  /**
+   * Structured reasons the reason-chip UI can bind to 1:1.
+   * Record only factors that actually decided this photo; never a nicer
+   * reason added afterwards. Expression codes appear only when this run
+   * used the face model and that signal participated in the decision.
+   */
+  function computeReasons(p, group, th) {
+    const groupSize = group.length;
+    const q = isBadQuality(p, th);
+    const expCode = exposureCode(q);
+    const secondary = [];
+    const exprOn = !!runFaceMode;
+    function pack(primary, extra) {
+      return {
+        primary: primary,
+        secondary: extra || [],
+        groupPos: p.groupPos || 1,
+        groupSize: groupSize,
+        keptPos: p.groupKeptPos || null,
+        keptId: p.groupKeptId || null,
+        faceSwapped: !!p.faceChanged,
+        faceChanged: !!p.faceChanged,
+        faceSwapKind: p.faceSwapKind || null,
+        sharpestPos: p.sharpestPos || null
+      };
+    }
+
+    if (p.userTouched) {
+      if (p.choice === "keep" && p.autoChoice === "delete") return pack(reasonChip("manualKeep"));
+      if (p.choice === "delete" && p.autoChoice === "keep") return pack(reasonChip("manualDelete"));
+    }
+
+    if (exprOn && p.faceChanged && p.choice === "delete" && p.sharpestId && p.id === p.sharpestId) {
+      if (expCode) secondary.push(reasonChip(expCode));
+      if (q.blur) secondary.push(reasonChip("blurrier"));
+      const better = p.faceSwapKind === "faceSharp" ? "faceSharpBetter" : "exprBetter";
+      return pack(reasonChip(better, { n: p.groupKeptPos, id: p.groupKeptId }), secondary);
+    }
+
+    if (exprOn && p.faceRules && groupSize > 1) {
+      if ((!p.faces || !p.faces.length) && p.choice === "delete") {
+        return pack(reasonChip("dupOf", dupOfParams(group)));
+      }
+      if (p.isBest && p.choice === "keep") {
+        if (p.faceChanged && p.faceSwapKind === "faceSharp") {
+          return pack(reasonChip("faceSharpest"));
+        }
+        const dec = p.faceDecisive;
+        if (dec === "fun") {
+          const main = (p.faces || []).filter(function (f) { return f.area >= 0.03; });
+          const selected = main.length ? main : (p.faces || []);
+          const funFace = selected.length ? selected.reduce(function (a, b) { return a.fun >= b.fun ? a : b; }) : null;
+          return pack(reasonChip("funnyExpr", funFace ? { kind: funFace.funKind, label: funKeyword(funFace.funKind) } : null));
+        }
+        if (dec === "smile") return pack(reasonChip("smile"));
+        if (dec === "blink") return pack(reasonChip("eyesOpen"));
+        return pack(reasonChip("sharpest"));
+      }
+      if (p.choice === "delete") {
+        const kept = group.find(function (x) { return x.isBest; }) || group[0];
+        const bothInPool = !!(kept.faces && kept.faces.length && p.faces && p.faces.length && kept.faceTiePool && p.faceTiePool);
+        const blinkParticipated = bothInPool && kept.faceFailed !== p.faceFailed;
+        if (p.faceFailed && blinkParticipated) {
+          secondary.push(reasonChip("dupOf", dupOfParams(group)));
+          return pack(reasonChip("eyesMaybeClosed"), secondary);
+        }
+        // Lost on face clarity: blurrier only if relative/absolute blur also applied.
+        // Do not add exposure as a secondary — computeReason never uses it on this path.
+        if (p.faceLossReason === "同組有臉部較清楚的一張" && q.blur) secondary.push(reasonChip("blurrier"));
+        return pack(reasonChip("dupOf", dupOfParams(group)), secondary);
+      }
+    }
+
+    if (groupSize > 1) {
+      if (p.isBest) {
+        if (p.choice === "keep") {
+          if (expCode) return pack(reasonChip(expCode));
+          if (q.flat) return pack(reasonChip("flat"));
+          return pack(reasonChip("sharpest"));
+        }
+        return pack(reasonChip("manualDelete"));
+      }
+      if (p.choice === "delete") {
+        const dup = reasonChip("dupOf", dupOfParams(group));
+        if (expCode) {
+          if (q.blur) secondary.push(reasonChip("blurrier"));
+          secondary.push(dup);
+          return pack(reasonChip(expCode), secondary);
+        }
+        if (q.blur) {
+          secondary.push(dup);
+          return pack(reasonChip("blurrier"), secondary);
+        }
+        return pack(dup);
+      }
+      if (expCode) return pack(reasonChip(expCode));
+      if (q.flat) return pack(reasonChip("flat"));
+      return pack(reasonChip("dupOf", dupOfParams(group)));
+    }
+
+    if (p.choice === "delete") {
+      if (expCode) return pack(reasonChip(expCode));
+      if (q.blur) return pack(reasonChip("blurrier"));
+      return pack(reasonChip("manualDelete"));
+    }
+    if (q.flat) return pack(reasonChip("flat"));
+    return pack(reasonChip("onlyOne"));
+  }
+
   /**
    * Truly textureless / near-uniform candidate (solid_gray/blue, e_exif6, flats).
    * Severe blurs can also look low-edge — they must NOT skip grouping if hash-similar
@@ -2919,6 +3326,26 @@
       else g.forEach(function (p) { p.faceWinLabel = ""; p.faceLossReason = ""; });
       const bestSharp = Math.max.apply(null, g.map(function (x) { return x.sharp; }));
       g.forEach(function (x) { x.groupBestSharp = bestSharp; });
+      assignGroupPositions(g);
+      // Counterfactual: would qualityScore-only (判斷表情 OFF) pick the same keeper?
+      if (runFaceMode && g.length > 1) {
+        const qBest = g.slice().sort(function (a, b) { return qualityScore(b) - qualityScore(a); })[0];
+        const changed = !!(g[0] && qBest && g[0].id !== qBest.id);
+        const dec = g[0] && g[0].faceDecisive;
+        const kind = !changed ? null : ((dec === "smile" || dec === "fun" || dec === "blink") ? "expr" : "faceSharp");
+        g.forEach(function (x) {
+          x.faceChanged = changed;
+          x.faceSwapKind = kind;
+          x.exprChanged = kind === "expr";
+          x.sharpestPos = qBest ? (qBest.groupPos || null) : null;
+          x.sharpestId = qBest ? qBest.id : null;
+        });
+      } else {
+        g.forEach(function (x) {
+          x.faceChanged = false; x.faceSwapKind = null; x.exprChanged = false;
+          x.sharpestPos = null; x.sharpestId = null;
+        });
+      }
     }
     for (let i = 0; i < analyzed.length; i++) {
       const p = analyzed[i];
@@ -2930,6 +3357,7 @@
       p.badQuality = q.bad;
       p.suggestDelete = p.choice === "delete";
       p.reason = computeReason(p, g.length, th);
+      p.reasons = computeReasons(p, g, th);
     }
   }
 
@@ -3135,6 +3563,115 @@
     mates.sort(function (a, b) { return (b.isBest ? 1 : 0) - (a.isBest ? 1 : 0); });
     return mates;
   }
+  const CHIP_LABEL = {
+    sharpest: "最清晰", smile: "有笑容", eyesOpen: "睜眼",
+    eyesMaybeClosed: "可能閉眼", onlyOne: "唯一一張", blurrier: "比較模糊",
+    tooDark: "太暗", tooBright: "太亮", flat: "太單調",
+    manualKeep: "你手動留", manualDelete: "你手動刪"
+  };
+  const CHIP_KEEP = { sharpest: 1, smile: 1, funnyExpr: 1, eyesOpen: 1, onlyOne: 1, manualKeep: 1, faceSharpest: 1 };
+  const CHIP_DEL = { dupOf: 1, blurrier: 1, tooDark: 1, tooBright: 1, manualDelete: 1, exprBetter: 1, faceSharpBetter: 1 };
+  function chipLabel(chip) {
+    if (!chip || !chip.code) return "";
+    if (chip.code === "funnyExpr") return "表情有趣：" + ((chip.params && chip.params.label) || "大笑");
+    if (chip.code === "dupOf") return "和第 " + ((chip.params && chip.params.n) || "?") + " 張重複";
+    if (chip.code === "exprBetter") return "第 " + ((chip.params && chip.params.n) || "?") + " 張表情較好";
+    if (chip.code === "faceSharpest") return "臉最清楚";
+    if (chip.code === "faceSharpBetter") return "第 " + ((chip.params && chip.params.n) || "?") + " 張臉較清楚";
+    return CHIP_LABEL[chip.code] || chip.code;
+  }
+  function chipClass(chip, isPrimary, choice) {
+    const code = chip && chip.code;
+    const cls = ["chip", isPrimary ? "chip-main" : "chip-sub"];
+    if (code === "eyesMaybeClosed") { cls.push("chip-amber"); if (!isPrimary) cls[1] = "chip-sub"; return cls.join(" "); }
+    if (code === "flat" && choice === "keep") return "chip chip-sub";
+    if (CHIP_KEEP[code]) cls.push(choice === "delete" && code === "manualKeep" ? "tone-keep" : "tone-keep");
+    else if (CHIP_DEL[code] || (code === "flat" && choice === "delete")) cls.push("tone-del");
+    // Keep-card exposure labels stay red (honest to the reason), except 你手動留.
+    if ((code === "tooDark" || code === "tooBright") && choice === "keep") {
+      cls.length = 2; cls.push("tone-del");
+    }
+    return cls.join(" ");
+  }
+  function chipHtml(chip, isPrimary, p, compact) {
+    if (!chip) return "";
+    const label = chipLabel(chip);
+    const cls = chipClass(chip, isPrimary, p.choice);
+    if ((chip.code === "dupOf" || chip.code === "exprBetter" || chip.code === "faceSharpBetter") && !compact) {
+      const n = chip.params && chip.params.n;
+      const id = (chip.params && chip.params.id) || p.groupKeptId || "";
+      const aria = chip.code === "exprBetter"
+        ? ("第 " + (n || "") + " 張表情較好")
+        : chip.code === "faceSharpBetter"
+          ? ("第 " + (n || "") + " 張臉較清楚")
+          : ("看留下的第 " + (n || "") + " 張");
+      return '<button type="button" class="' + cls + ' chip-jump" data-act="group-ref" data-ref-id="' + escapeAttr(id) + '" aria-label="' + escapeAttr(aria) + '">' +
+        escapeHtml(label) + ' <span class="chevron" aria-hidden="true">›</span></button>';
+    }
+    if (compact) return '<span class="' + cls + '"><span class="chip-text">' + escapeHtml(label) + "</span></span>";
+    return '<span class="' + cls + '">' + escapeHtml(label) + "</span>";
+  }
+  function reasonChipsHtml(p, compact) {
+    const rs = p.reasons || { primary: { code: "onlyOne" }, secondary: [] };
+    const all = [rs.primary].concat(rs.secondary || []).filter(Boolean);
+    if (compact) {
+      const first = all[0];
+      if (!first) return "";
+      return '<div class="reason-chips">' + chipHtml(first, true, p, true) + "</div>";
+    }
+    const shown = all.slice(0, 3);
+    const hidden = all.length - shown.length;
+    let html = '<div class="reason-chips">';
+    for (let i = 0; i < shown.length; i++) html += chipHtml(shown[i], i === 0, p, false);
+    if (hidden > 0) html += '<span class="chip chip-more">+' + hidden + "</span>";
+    html += "</div>";
+    return html;
+  }
+  function reasonExplText(p) {
+    const rs = p.reasons || {};
+    const code = rs.primary && rs.primary.code;
+    const m = rs.groupSize || p.groupSize || 1;
+    const kn = rs.keptPos || p.groupKeptPos;
+    const secs = rs.secondary || [];
+    const has = function (c) { return secs.some(function (s) { return s.code === c; }); };
+    if ((rs.faceChanged || p.faceChanged) && p.choice === "keep" && p.isBest) {
+      const sp = rs.sharpestPos || p.sharpestPos;
+      const kind = rs.faceSwapKind || p.faceSwapKind;
+      if (sp && kind === "faceSharp") return "第 " + sp + "/" + m + " 張整體較清楚，但這張臉比較清楚";
+      if (sp && kind === "expr") return "第 " + sp + "/" + m + " 張比較清楚，但這張表情比較好";
+    }
+    if (code === "onlyOne") return "只有這一張，沒有相似的可以比";
+    if (code === "sharpest") return "同組 " + m + " 張裡最清楚";
+    if (code === "faceSharpest") return "同組 " + m + " 張裡臉比較清楚";
+    if (code === "smile") return "同組 " + m + " 張裡有笑容，也很清楚";
+    if (code === "funnyExpr") return "同組 " + m + " 張裡表情最有趣，也很清楚";
+    if (code === "eyesOpen") return "同組 " + m + " 張裡有睜眼，也很清楚";
+    if (code === "exprBetter") return "第 " + (kn || (rs.primary && rs.primary.params && rs.primary.params.n) || "") + " 張表情比較好，這張可以刪";
+    if (code === "faceSharpBetter") return "第 " + (kn || (rs.primary && rs.primary.params && rs.primary.params.n) || "") + " 張臉比較清楚，這張可以刪";
+    if (code === "eyesMaybeClosed") {
+      let s = "可能閉眼";
+      if (has("tooDark")) s += "，也偏暗";
+      else if (has("tooBright")) s += "，也偏亮";
+      if (kn) s += "，第 " + kn + " 張比較清楚";
+      return s;
+    }
+    // v10o: explanation always follows the primary reason (PM). Exposure primaries never borrow
+    // the duplicate secondary's 「比較清楚」 wording.
+    if (code === "tooDark" || code === "tooBright") {
+      const own = rs.groupPos || p.groupPos || 0;
+      const base = code === "tooDark" ? "這張太暗" : "這張太亮";
+      return (m > 1 && kn && kn !== own) ? (base + "，留下的是第 " + kn + " 張") : base;
+    }
+    if (code === "dupOf" || has("dupOf")) return "第 " + (kn || (rs.primary && rs.primary.params && rs.primary.params.n) || "") + " 張比較清楚，這張可以刪";
+    if (code === "blurrier") return kn ? ("第 " + kn + " 張比較清楚，這張可以刪") : "這張比較模糊";
+    if (code === "tooDark") return "這張太暗";
+    if (code === "tooBright") return "這張太亮";
+    if (code === "flat") return "畫面比較單調";
+    if (code === "manualKeep") return "你手動留下這一張";
+    if (code === "manualDelete") return "你手動刪除這一張";
+    return p.reason || "";
+  }
+
   function groupRefHtml(p) {
     if (!p || p.groupId == null || (p.groupSize || 1) <= 1) return "";
     const keepers = groupKeepersFor(p);
@@ -3143,11 +3680,10 @@
       return '<div class="group-ref none"><span class="gr-text">同組 ' + p.groupSize + " 張目前都沒有留</span></div>";
     }
     const k = keepers[0];
-    const more = keepers.length > 1 ? "（另 " + (keepers.length - 1) + " 張）" : "";
-    return '<div class="group-ref">' +
-      '<button type="button" class="gr-thumb" data-act="group-ref" data-ref-id="' + escapeAttr(k.id) + '" aria-label="看同組保留的 ' + escapeAttr(k.name) + '">' +
-        '<img alt="" data-pid="' + escapeAttr(k.id) + '" data-kind="mini" /></button>' +
-      '<span class="gr-text">同組保留：' + escapeHtml(k.name) + more + "</span></div>";
+    const n = k.groupPos || p.groupKeptPos || "";
+    return '<button type="button" class="group-ref" data-act="group-ref" data-ref-id="' + escapeAttr(k.id) + '" aria-label="留下的是第 ' + escapeAttr(String(n)) + ' 張">' +
+      '<span class="gr-thumb"><img alt="" data-pid="' + escapeAttr(k.id) + '" data-kind="mini" /></span>' +
+      '<span class="gr-text">留下的是第 ' + escapeHtml(String(n)) + " 張</span></button>";
   }
   function rescuedNoteText(p) {
     if (!rescuedPending[p.id] || matchesFilter(p, resultFilter) || resultFilter === "all") return "";
@@ -3170,6 +3706,16 @@
     const r = cardRatio(p);
     return '<div class="thumb-wrap"' + (r ? ' style="aspect-ratio:' + r.toFixed(4) + '"' : "") + ">";
   }
+  function jumpToKeptPhoto(refId, from) {
+    const node = el.cards && el.cards.querySelector('[data-id="' + CSS.escape(refId) + '"]');
+    if (node) {
+      node.scrollIntoView({ behavior: "smooth", block: "center" });
+      node.classList.add("jump-hl");
+      setTimeout(function () { node.classList.remove("jump-hl"); }, 1200);
+      return;
+    }
+    openViewer(refId, { preferGroup: true, gid: from && from.groupId });
+  }
   function cardHtml(p, opts) {
     opts = opts || {};
     const compact = !!(opts && opts.compact);
@@ -3178,9 +3724,6 @@
     if (compact) cls.push("card-compact");
     if (filtered) cls.push("filtered");
     if (filtered && rescuedPending[p.id] && !matchesFilter(p, resultFilter)) cls.push(resultFilter === "delete" ? "rescued" : "just-moved");
-    const tags = [];
-    if (p.isBest && p.groupSize > 1 && !filtered) tags.push('<span class="tag best">建議留下</span>');
-    if (p.userTouched) tags.push('<span class="tag manual">手動</span>');
     const badgeCls = p.choice === "keep" ? "keep" : "delete";
     const badgeText = p.choice === "keep" ? "留" : "刪";
     const showRestore = p.userTouched && p.choice !== p.autoChoice;
@@ -3192,6 +3735,10 @@
     const restoreHtml = showRestore
       ? '<button type="button" class="restore-link" data-act="restore">還原</button>'
       : "";
+    const posN = p.groupPos || (p.reasons && p.reasons.groupPos) || 0;
+    const posM = p.groupSize || (p.reasons && p.reasons.groupSize) || 1;
+    const posLabel = "第 " + posN + "/" + posM + " 張";
+    const showPos = posM > 1 && posN > 0;
     if (compact) {
       return (
         '<article class="' + cls.join(" ") + '" data-id="' + escapeAttr(p.id) + '" tabindex="-1">' +
@@ -3201,26 +3748,28 @@
             faceDebugHtml(p) + '<span class="choice-badge ' + badgeCls + '">' + badgeText + "</span>" +
           "</div>" +
           '<div class="meta meta-compact">' +
-            '<div class="reason">' + reasonHtml(p) + "</div>" +
+            (showPos ? '<div class="pos-line">' + escapeHtml(posLabel) + "</div>" : "") +
+            reasonChipsHtml(p, true) +
             switchHtml + restoreHtml +
-            '<button type="button" class="btn-view-full" data-act="view">看大圖</button>' +
           "</div>" +
         "</article>"
       );
     }
+    const manualTag = p.userTouched ? '<div class="tag-row"><span class="tag manual">手動</span></div>' : "";
     return (
       '<article class="' + cls.join(" ") + '" data-id="' + escapeAttr(p.id) + '" tabindex="-1">' +
         thumbWrapOpen(p, false) +
           '<span class="thumb-placeholder" aria-hidden="true"></span>' +
           '<img data-pid="' + escapeAttr(p.id) + '" data-kind="display" alt="" width="720" height="540" />' +
           faceDebugHtml(p) + '<span class="choice-badge ' + badgeCls + '">' + badgeText + "</span>" +
-          (tags.length ? '<div class="tag-row">' + tags.join("") + "</div>" : "") +
+          (showPos ? '<span class="pos-tag">' + escapeHtml(posLabel) + "</span>" : "") +
+          manualTag +
         "</div>" +
         '<div class="meta">' +
           '<div class="fname">' + escapeHtml(p.name) + "</div>" +
-          '<div class="reason">' + reasonHtml(p) + "</div>" +
-          (filtered ? groupRefHtml(p) : "") +
-          '<div class="scores">清晰度 ' + Math.round(p.sharp) + " · 亮度 " + Math.round(p.mean) + "</div>" +
+          reasonChipsHtml(p, false) +
+          '<p class="reason-expl">' + escapeHtml(reasonExplText(p)) + "</p>" +
+          (p.choice === "delete" ? groupRefHtml(p) : "") +
           (filtered && resultFilter === "delete"
             ? '<div class="card-controls">' + rescueBtnHtml(p) + "</div>"
             : '<div class="card-controls">' + switchHtml + restoreHtml + "</div>" +
@@ -3278,7 +3827,8 @@
         el.resultAdvPanel.classList.add("hidden");
       }
     }
-    if (mode === "result") el.progressBlock.classList.add("hidden");
+    if (mode === "result") { el.progressBlock.classList.add("hidden"); setPickHeroBusy(false); }
+    if (mode === "home" && !processing) setPickHeroBusy(false);
   }
 
   function groupBlockHtml(g) {
@@ -3387,16 +3937,31 @@
     renderResult();
     window.scrollTo(0, 0);
   }
-  function renderResult() {
-    const kept = keptPhotos();
-    const dels = deletedPhotos();
+  function faceChangedGroupCount() {
+    const seen = {};
+    let k = 0;
+    photos.forEach(function (p) {
+      if (p.analyzed && p.faceChanged && p.groupId != null && !seen[p.groupId]) { seen[p.groupId] = true; k++; }
+    });
+    return k;
+  }
+  function summaryCountsHtml() {
+    const kept = keptPhotos().length;
+    const dels = deletedPhotos().length;
     const total = photos.filter(function (p) { return p.analyzed; }).length;
-    el.summaryCounts.innerHTML =
-      '<span class="c-keep">留 <strong>' + kept.length + "</strong></span>" +
+    const k = faceChangedGroupCount();
+    document.body.classList.toggle("has-expr-swap", k > 0);
+    return '<div class="summary-nums">' +
+      '<span class="c-keep">留 <strong>' + kept + "</strong></span>" +
       '<span class="sep">　</span>' +
-      '<span class="c-del">刪 <strong>' + dels.length + "</strong></span>" +
+      '<span class="c-del">刪 <strong>' + dels + "</strong></span>" +
       '<span class="sep">　</span>' +
-      '<span class="c-total">共 <strong>' + total + "</strong></span>";
+      '<span class="c-total">共 <strong>' + total + "</strong></span>" +
+      "</div>" +
+      (k ? '<div class="expr-swap-line">有 ' + k + " 組因臉部判斷改選</div>" : "");
+  }
+  function renderResult() {
+    el.summaryCounts.innerHTML = summaryCountsHtml();
 
     const hintDismissed = localStorage.getItem(HINT_KEY) === "1";
     if (el.resultHint) el.resultHint.classList.toggle("hidden", hintDismissed || resultFilter !== "all");
@@ -3746,12 +4311,72 @@
     }
   }
 
+  let modelWaitNotify = null;
+  function setPickHeroBusy(on) {
+    const hero = document.querySelector(".pick-hero");
+    if (hero) hero.classList.toggle("is-busy", !!on);
+  }
+  function setModelWaitUI(on) {
+    modelWaitActive = !!on;
+    const track = el.progressTrack || (el.progressBar && el.progressBar.parentElement);
+    if (el.btnSkipFaceWait) el.btnSkipFaceWait.classList.toggle("hidden", !on);
+    if (el.btnPause) el.btnPause.classList.toggle("hidden", !!on);
+    if (on) {
+      if (track) track.classList.add("indet");
+      if (el.progressBar) el.progressBar.style.width = "36%";
+      if (el.progressText) el.progressText.textContent = "準備表情模型中…";
+    } else {
+      if (track) track.classList.remove("indet");
+      if (el.btnSkipFaceWait) el.btnSkipFaceWait.classList.add("hidden");
+      if (el.btnPause) el.btnPause.classList.remove("hidden");
+    }
+  }
+  function notifyModelWait(which) {
+    if (typeof modelWaitNotify === "function") {
+      const fn = modelWaitNotify;
+      modelWaitNotify = null;
+      fn(which);
+    }
+  }
+  async function waitForFaceModelOrSkip() {
+    faceReadyAppliesThisRun = true;
+    setModelWaitUI(true);
+    getFaceTask().catch(function () {});
+    const outcome = await new Promise(function (resolve) {
+      let settled = false;
+      function done(which) {
+        if (settled) return;
+        settled = true;
+        modelWaitNotify = null;
+        resolve(which);
+      }
+      modelWaitNotify = done;
+      getFaceTask().then(function () { done("ready"); }, function () { done("fail"); });
+      const poll = setInterval(function () {
+        if (!processing) { clearInterval(poll); done("cancel"); }
+        else if (readyFaceTask) { clearInterval(poll); done("ready"); }
+      }, 50);
+      const prev = modelWaitNotify;
+      modelWaitNotify = function (which) {
+        clearInterval(poll);
+        prev(which);
+      };
+    });
+    setModelWaitUI(false);
+    if (outcome !== "ready") faceReadyAppliesThisRun = false;
+    if (outcome === "skip") {
+      showToast("這次先不判斷表情");
+    }
+    if (outcome === "fail") {
+      if (el.progressText) el.progressText.textContent = "表情模型無法載入，改以清晰度判斷";
+      showToast("表情模型無法載入，改以清晰度判斷");
+      await new Promise(function (r) { setTimeout(r, 600); });
+    }
+    return outcome;
+  }
+
   async function processFiles(fileList) {
     if (processing) return;
-    // Snapshot once: a model that completes mid-run only affects the NEXT run.
-    // Snapshot pref + model: a toggle or a late-arriving model only affects the NEXT run.
-    runFaceMode=!!readyFaceTask && !!faceExprPref;
-    faceRuntimeStats.runMode=runFaceMode?"faces":"v9";
     processing = true; paused = false; pauseWaiters = [];
     resultFilter = "delete"; rescuedPending = {}; renderGen++; delSeenAll = false;
     el.btnPause.textContent = "暫停";
@@ -3784,14 +4409,26 @@
     showFinish = false;
     expandedGroups = {};
     setScreen("home");
+    setPickHeroBusy(true);
     el.progressBlock.classList.remove("hidden");
     el.advPanel.classList.add("hidden");
     el.progressBar.style.width = "0%";
+    el.progressBlock.classList.remove("hidden");
+    let skipFaceThisRun = false;
+    if (faceExprPref && !readyFaceTask) {
+      const wait = await waitForFaceModelOrSkip();
+      if (!processing || wait === "cancel") { setPickHeroBusy(false); return; }
+      if (wait === "skip" || wait === "fail") skipFaceThisRun = true;
+    }
+    // Snapshot pref + model after the wait: a late-arriving model or a skip
+    // only affects THIS run via skipFaceThisRun; the saved pref is unchanged.
+    runFaceMode = !!readyFaceTask && !!faceExprPref && !skipFaceThisRun;
+    faceRuntimeStats.runMode = runFaceMode ? "faces" : "v9";
+    el.progressBar.style.width = "0%";
     el.progressText.textContent = "整理照片中… 0 / " + files.length;
-    getMetricWorker();
-    getEncodeWorker();
-    getEncodeWorker();
-    ensureFaceScratchWorker();
+    // Workers start lazily when first needed, and only if runFaceMode is on.
+    // With 判斷表情 OFF: metrics and hashes run on the main thread, thumbs
+    // and display JPEGs use canvas.toBlob, and no Worker is constructed.
 
     const t0 = performance.now();
     let skippedCache = 0, analyzedFresh = 0;
@@ -3814,7 +4451,13 @@
         }
         try {
           if (!file.size) throw new Error("empty");
-          if (applyCachedAnalysis(item, saved)) skippedCache++;
+          if (applyCachedAnalysis(item, saved)) {
+            // v10q: saved captureMs may come from an older parser (DateTime first). Re-read the
+            // date (128KB slice, DateTimeOriginal first) so grouping never uses a stale time.
+            const cap = await readCaptureDate(file);
+            item.captureMs = cap.ms; item.dateSource = cap.source;
+            skippedCache++;
+          }
           else { await analyzeOne(item); analyzedFresh++; }
         } catch (err) {
           console.warn(err); item.analyzed = false;
@@ -3945,6 +4588,7 @@
       el.progressBlock.classList.add("hidden");
       el.progressText.textContent = "";
       processing = false;
+      setPickHeroBusy(false);
       clearAnalysisFlag();
       render();
       return;
@@ -3995,6 +4639,7 @@
     resultFilter = "delete";
     rescuedPending = {};
     processing = false;
+    setPickHeroBusy(false);
     clearAnalysisFlag();
     renderResult();
   }
@@ -4207,15 +4852,7 @@
   }
 
   function updateSummaryCountsOnly() {
-    const kept = keptPhotos();
-    const dels = deletedPhotos();
-    const total = photos.filter(function (x) { return x.analyzed; }).length;
-    el.summaryCounts.innerHTML =
-      '<span class="c-keep">留 <strong>' + kept.length + "</strong></span>" +
-      '<span class="sep">　</span>' +
-      '<span class="c-del">刪 <strong>' + dels.length + "</strong></span>" +
-      '<span class="sep">　</span>' +
-      '<span class="c-total">共 <strong>' + total + "</strong></span>";
+    el.summaryCounts.innerHTML = summaryCountsHtml();
     updateFilterBar();
   }
 
@@ -4231,8 +4868,18 @@
       badge.classList.toggle("keep", p.choice === "keep");
       badge.classList.toggle("delete", p.choice === "delete");
     }
-    const reason = card.querySelector(".reason");
-    if (reason) reason.innerHTML = reasonHtml(p);
+    const chips = card.querySelector(".reason-chips");
+    if (chips) chips.outerHTML = reasonChipsHtml(p, card.classList.contains("card-compact"));
+    const expl = card.querySelector(".reason-expl");
+    if (expl) expl.textContent = reasonExplText(p);
+    const ref = card.querySelector(".group-ref");
+    const wantRef = p.choice === "delete" ? groupRefHtml(p) : "";
+    if (ref && wantRef) ref.outerHTML = wantRef;
+    else if (ref && !wantRef) ref.remove();
+    else if (!ref && wantRef) {
+      const after = card.querySelector(".reason-expl") || card.querySelector(".reason-chips");
+      if (after) after.insertAdjacentHTML("afterend", wantRef);
+    }
     card.querySelectorAll(".seg-opt.keep").forEach(function (b) { b.classList.toggle("on", p.choice === "keep"); });
     card.querySelectorAll(".seg-opt.del").forEach(function (b) { b.classList.toggle("on", p.choice === "delete"); });
     const note = card.querySelector(".rescued-note");
@@ -4282,6 +4929,8 @@
     } else return;
     const th = thresholds();
     p.reason = computeReason(p, p.groupSize || 1, th);
+    const matesV = photos.filter(function (x) { return x.analyzed && x.groupId === p.groupId; });
+    p.reasons = computeReasons(p, matesV.length ? matesV : [p], th);
     if (resultFilter !== "all") rescuedPending[p.id] = true;
     await persistChoice(p);
     updateViewerChrome();
@@ -4766,11 +5415,17 @@
       el.advPanel.classList.add("hidden");
     }
   });
+  if (el.btnSkipFaceWait) {
+    el.btnSkipFaceWait.addEventListener("click", function () {
+      notifyModelWait("skip");
+    });
+  }
   el.btnReselect.addEventListener("click", function () {
     closeMoreMenu();
     // Stop an in-flight run so its loops exit and its tail dropAll can run.
     // Then drop again ourselves (covers completed runs and leftover races).
     processing = false;
+    notifyModelWait("cancel");
     paused = false;
     if (pauseWaiters && pauseWaiters.length) {
       const w = pauseWaiters.slice();
@@ -4785,6 +5440,7 @@
     el.advPanel.classList.add("hidden");
     el.progressBlock.classList.add("hidden");
     el.resultAdvPanel.classList.add("hidden");
+    setPickHeroBusy(false);
     setScreen("home");
   });
   el.btnHintClose.addEventListener("click", function () {
@@ -4853,7 +5509,7 @@
     const act = btn ? btn.getAttribute("data-act") : null;
     if (act === "group-ref") {
       const refId = btn.getAttribute("data-ref-id");
-      if (refId) openViewer(refId, { preferGroup: true, gid: p.groupId });
+      if (refId) jumpToKeptPhoto(refId, p);
       return;
     }
     if (resultFilter !== "all" && (act === "view" || (!btn && e.target.closest(".thumb-wrap")))) {
@@ -4880,6 +5536,8 @@
     } else return;
     const th = thresholds();
     p.reason = computeReason(p, p.groupSize || 1, th);
+    const matesC = photos.filter(function (x) { return x.analyzed && x.groupId === p.groupId; });
+    p.reasons = computeReasons(p, matesC.length ? matesC : [p], th);
     if (resultFilter !== "all") {
       // Keep the card in place with instant feedback; it leaves the list only on filter switch
       rescuedPending[p.id] = true;
@@ -4904,6 +5562,8 @@
       p.userTouched = false;
       p.choice = p.autoChoice;
       p.reason = computeReason(p, p.groupSize || 1, thresholds());
+      const matesR = photos.filter(function (x) { return x.analyzed && x.groupId === p.groupId; });
+      p.reasons = computeReasons(p, matesR.length ? matesR : [p], thresholds());
     });
     for (const p of photos) { if (p.analyzed) await persistChoice(p); }
     showToast("已全部還原為自動建議");
@@ -4997,6 +5657,51 @@
     getUnreadable: function () { return unreadableFiles.slice(); },
     getLastRunStats: function () { return lastRunStats; },
     getFaceExprPref: function () { return !!faceExprPref; },
+    setFaceExprPref: function (on, opts) { setFaceExprPref(on, opts || { source: "api" }); },
+    releaseFaceModel: function () { if (window.__photoCullHold) window.__photoCullHold.release(); },
+    failFaceModel: function (msg) { if (window.__photoCullHold) window.__photoCullHold.fail(new Error(msg || "test fail")); },
+    isModelWaitVisible: function () {
+      return !!(el.btnSkipFaceWait && !el.btnSkipFaceWait.classList.contains("hidden"));
+    },
+    getModelWaitText: function () { return el.progressText ? el.progressText.textContent : ""; },
+    skipFaceWait: function () { notifyModelWait("skip"); },
+    getExprChangedGroups: function () {
+      const seen = {};
+      photos.forEach(function (p) {
+        if (p.exprChanged && p.groupId != null && !seen[p.groupId]) {
+          seen[p.groupId] = photos.filter(function (x) { return x.groupId === p.groupId; }).map(function (x) { return x.name; }).sort();
+        }
+      });
+      return seen;
+    },
+    getFaceChangedGroups: function () {
+      const seen = {};
+      photos.forEach(function (p) {
+        if (p.faceChanged && p.groupId != null && !seen[p.groupId]) {
+          const mates = photos.filter(function (x) { return x.groupId === p.groupId; });
+          seen[p.groupId] = {
+            names: mates.map(function (x) { return x.name; }).sort(),
+            kind: p.faceSwapKind || null,
+            sharpestPos: p.sharpestPos || null
+          };
+        }
+      });
+      return seen;
+    },
+    isPickHeroBusy: function () {
+      const hero = document.querySelector(".pick-hero");
+      return !!(hero && hero.classList.contains("is-busy"));
+    },
+    isPickHidden: function () {
+      const btn = document.querySelector(".pick-hero .file-btn");
+      const sw = document.getElementById("btnFaceExprHome");
+      function hidden(n) {
+        if (!n) return true;
+        const s = window.getComputedStyle(n);
+        return s.display === "none" || s.visibility === "hidden" || n.classList.contains("hidden");
+      }
+      return hidden(btn) && hidden(sw);
+    },
     isCrashHintVisible: function () { return !!crashHintVisible; },
     clearAnalysisFlag: clearAnalysisFlag,
     setAnalysisFlagForTest: setAnalysisFlag,
