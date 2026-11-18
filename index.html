@@ -331,6 +331,7 @@
     text-align: left; font-weight: 400;
   }
 
+  .face-timeout-hint { margin-top: 0; max-width: none; }
   .result-hint { margin: 10px 0 12px; padding-right: 44px; }
   /* v9: result filter (sticky under summary bar, ≤96px) */
   .filter-bar {
@@ -809,6 +810,7 @@
       <p id="crashHint" class="crash-hint hidden" role="status" aria-live="polite">上次分析中斷，已先關閉判斷表情，可手動打開</p>
       <div id="progressBlock" class="progress-wrap panel hidden">
         <div class="progress"><i id="progressBar"></i></div>
+        <p id="faceTimeoutHint" class="crash-hint face-timeout-hint hidden" role="status" aria-live="polite">表情模型載入太久，這次先不判斷表情</p>
         <div class="status" id="progressText">準備中…</div>
         <div class="progress-row">
           <button type="button" class="btn btn-ghost hidden" id="btnSkipFaceWait">先不判斷表情，直接開始</button>
@@ -1011,6 +1013,7 @@
     btnFaceExprHome: document.getElementById("btnFaceExprHome"),
     faceExprSwitchHome: document.getElementById("faceExprSwitchHome"),
     crashHint: document.getElementById("crashHint"),
+    faceTimeoutHint: document.getElementById("faceTimeoutHint"),
     btnRestoreAll: document.getElementById("btnRestoreAll"),
     btnResultAdv: document.getElementById("btnResultAdv"),
     resultAdvPanel: document.getElementById("resultAdvPanel"),
@@ -2540,21 +2543,33 @@
       observer.disconnect(); window.removeEventListener("resize",position);
     },4000);
   }
+  // v10r: never wait on the SW forever. First visit (controller null) or a SW that never
+  // claims within 3s -> return null and the page fetches the model files itself.
   async function faceAssetController() {
-    if (!("serviceWorker" in navigator)) throw new Error("Offline face assets require HTTPS or localhost service workers");
-    const expected=new URL("./sw.v10q.js",location.href).href;
-    if(navigator.serviceWorker.controller?.scriptURL !== expected) await navigator.serviceWorker.register("./sw.v10q.js");
+    if (!("serviceWorker" in navigator)) return null;
+    let timer = null;
+    const t = new Promise(function (r) { timer = setTimeout(function () { r(null); }, 3000); });
+    const c = await Promise.race([faceAssetControllerSW().catch(function () { return null; }), t]);
+    clearTimeout(timer);
+    return c || null;
+  }
+  async function faceAssetControllerSW() {
+    const expected=new URL("./sw.v10r.js",location.href).href;
+    if(navigator.serviceWorker.controller?.scriptURL !== expected) await navigator.serviceWorker.register("./sw.v10r.js");
     if (navigator.serviceWorker.controller?.scriptURL !== expected) await new Promise(resolve=>{
       function ready(){if(navigator.serviceWorker.controller?.scriptURL===expected){navigator.serviceWorker.removeEventListener("controllerchange",ready);resolve();}}
       navigator.serviceWorker.addEventListener("controllerchange",ready); ready();
     });
     return navigator.serviceWorker.controller;
   }
+  // v10r: offline precache is best-effort; no controller, no reply within 3s or an error never blocks the model.
   function precacheFaceVariant(controller,simd) {
-    return new Promise((resolve,reject)=>{
+    if (!controller) return Promise.resolve(false);
+    return new Promise((resolve)=>{
       const channel=new MessageChannel();
-      channel.port1.onmessage=e=>{channel.port1.close();e.data.ok?resolve():reject(new Error(e.data.error));};
-      controller.postMessage({type:"v10q-face-assets",simd},[channel.port2]);
+      const timer=setTimeout(()=>{try{channel.port1.close();}catch(_){} resolve(false);},3000);
+      channel.port1.onmessage=e=>{clearTimeout(timer);channel.port1.close();resolve(!!(e.data&&e.data.ok));};
+      controller.postMessage({type:"v10r-face-assets",simd},[channel.port2]);
     });
   }
   const FACE_MODEL_URL = "./vendor/v10/face_landmarker.task";
@@ -2567,20 +2582,30 @@
     "./vendor/v10/tasks-vision/wasm/vision_wasm_nosimd_internal.wasm": 9448638
   };
   let modelWaitActive = false;
+  // v10r: current model-load stage (shown during the wait, kept for diagnosis on timeout).
+  let faceStage = "", faceStageLabel = "", faceLastProgressAt = 0;
+  function setFaceStage(stage, label) {
+    faceStage = stage; faceStageLabel = label; faceLastProgressAt = performance.now();
+    faceRuntimeStats.lastStage = stage;
+    if (el.progressBlock) el.progressBlock.setAttribute("data-face-stage", stage);
+    if (modelWaitActive && stage !== "download" && el.progressText) el.progressText.textContent = "準備表情模型中・" + label;
+  }
   function formatMb(bytes) {
     return (Math.round(bytes / 1048576 * 10) / 10).toFixed(1);
   }
+  let faceLastBytes = -1;
   function updateModelDownloadProgress(received, total) {
+    if (received !== faceLastBytes) { faceLastBytes = received; faceLastProgressAt = performance.now(); }
     if (!modelWaitActive) return;
     const track = el.progressTrack || (el.progressBar && el.progressBar.parentElement);
     if (total > 0) {
       if (track) track.classList.remove("indet");
       if (el.progressBar) el.progressBar.style.width = Math.min(100, Math.round(received / total * 100)) + "%";
-      if (el.progressText) el.progressText.textContent = "準備表情模型中… " + formatMb(received) + " / " + formatMb(total) + " MB";
+      if (el.progressText) el.progressText.textContent = "準備表情模型中・下載 " + formatMb(received) + " / " + formatMb(total) + " MB";
     } else {
       if (track) track.classList.add("indet");
       if (el.progressBar) el.progressBar.style.width = "36%";
-      if (el.progressText) el.progressText.textContent = "準備表情模型中…";
+      if (el.progressText) el.progressText.textContent = "準備表情模型中・下載中…";
     }
   }
   async function fetchBodyWithProgress(url, onChunk, keep) {
@@ -2649,7 +2674,10 @@
         });
       }
       const start = performance.now();
+      setFaceStage("sw", "連線中…");
       const controller=await faceAssetController();
+      faceRuntimeStats.swControlled=!!controller;
+      setFaceStage("import", "載入程式中…");
       const mp = await import("./vendor/v10/tasks-vision/vision_bundle.mjs");
       // Exactly one capability probe, then explicit paths (no second resolver probe).
       const supported=await mp.FilesetResolver.isSimdSupported();
@@ -2660,7 +2688,9 @@
       const wasmBin="./vendor/v10/tasks-vision/wasm/"+name+".wasm";
       // Stream the model (keep the buffer for MediaPipe) and the wasm files (count only;
       // the service worker caches them). Progress is shown only while the wait UI is up.
+      setFaceStage("download", "下載中…");
       const modelBuf = await loadFaceAssetsWithProgress(FACE_MODEL_URL, [wasmJs, wasmBin]);
+      setFaceStage("init", "啟動中…");
       await precacheFaceVariant(controller,simd);
       const fs={wasmLoaderPath:wasmJs,wasmBinaryPath:wasmBin};
       const task = await mp.FaceLandmarker.createFromOptions(fs, {
@@ -4324,7 +4354,7 @@
     if (on) {
       if (track) track.classList.add("indet");
       if (el.progressBar) el.progressBar.style.width = "36%";
-      if (el.progressText) el.progressText.textContent = "準備表情模型中…";
+      if (el.progressText) el.progressText.textContent = "準備表情模型中・" + (faceStageLabel || "連線中…");
     } else {
       if (track) track.classList.remove("indet");
       if (el.btnSkipFaceWait) el.btnSkipFaceWait.classList.add("hidden");
@@ -4337,6 +4367,20 @@
       modelWaitNotify = null;
       fn(which);
     }
+  }
+  const FACE_WAIT_TOTAL_MS = 30000, FACE_WAIT_IDLE_MS = 10000;
+  function showFaceTimeoutCard(stage) {
+    const card = el.faceTimeoutHint;
+    if (!card) return;
+    card.setAttribute("data-stage", stage || "unknown");
+    card.classList.remove("hidden");
+    if (el.progressTrack) el.progressTrack.classList.add("hidden");
+    clearTimeout(showFaceTimeoutCard.timer);
+    // Collapse once analysis is under way (min 2.5s on screen so it can be read).
+    showFaceTimeoutCard.timer = setTimeout(function () {
+      card.classList.add("hidden");
+      if (el.progressTrack) el.progressTrack.classList.remove("hidden");
+    }, 2500);
   }
   async function waitForFaceModelOrSkip() {
     faceReadyAppliesThisRun = true;
@@ -4352,9 +4396,13 @@
       }
       modelWaitNotify = done;
       getFaceTask().then(function () { done("ready"); }, function () { done("fail"); });
+      // v10r watchdog: 30s total, or 10s without any stage change / new bytes -> this run goes OFF.
+      const waitStart = performance.now();
       const poll = setInterval(function () {
+        const now = performance.now();
         if (!processing) { clearInterval(poll); done("cancel"); }
         else if (readyFaceTask) { clearInterval(poll); done("ready"); }
+        else if (now - waitStart > FACE_WAIT_TOTAL_MS || now - Math.max(waitStart, faceLastProgressAt) > FACE_WAIT_IDLE_MS) { clearInterval(poll); done("timeout"); }
       }, 50);
       const prev = modelWaitNotify;
       modelWaitNotify = function (which) {
@@ -4366,6 +4414,13 @@
     if (outcome !== "ready") faceReadyAppliesThisRun = false;
     if (outcome === "skip") {
       showToast("這次先不判斷表情");
+    }
+    if (outcome === "timeout") {
+      // Pref stays ON; drop the stuck promise so the next run retries from scratch.
+      faceRuntimeStats.timeoutStage = faceStage || "unknown";
+      faceTaskPromise = null;
+      console.warn("[photo-cull] face model wait timed out at stage:", faceStage);
+      showFaceTimeoutCard(faceStage);
     }
     if (outcome === "fail") {
       if (el.progressText) el.progressText.textContent = "表情模型無法載入，改以清晰度判斷";
@@ -4418,7 +4473,7 @@
     if (faceExprPref && !readyFaceTask) {
       const wait = await waitForFaceModelOrSkip();
       if (!processing || wait === "cancel") { setPickHeroBusy(false); return; }
-      if (wait === "skip" || wait === "fail") skipFaceThisRun = true;
+      if (wait === "skip" || wait === "fail" || wait === "timeout") skipFaceThisRun = true;
     }
     // Snapshot pref + model after the wait: a late-arriving model or a skip
     // only affects THIS run via skipFaceThisRun; the saved pref is unchanged.
