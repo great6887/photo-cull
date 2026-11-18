@@ -24,6 +24,16 @@
     --del: #E5484D;
     --warn: #C4871A;
     --chip: #EEF0F3;
+    --keep-text: #15803D;
+    --keep-fill: #E8F6EC;
+    --keep-fill-sub: #F3FAF5;
+    --del-text: #C62D32;
+    --del-fill: #FDECEC;
+    --del-fill-sub: #FFF4F4;
+    --amber-bg: #FEF3E2;
+    --amber-text: #92400E;
+    --chip-neutral: #F1F2F4;
+    --chip-neutral-text: #374151;
     --shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 16px rgba(15, 23, 42, 0.06);
     --footer-bg: rgba(246, 247, 249, 0.94);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -77,7 +87,8 @@
   .btn-primary { background: var(--accent); color: #fff; }
   .btn-primary:active { background: var(--accent-press); }
   .btn-ghost {
-    background: var(--chip); color: var(--text); border: 1px solid var(--border); font-weight: 600;
+    background: #fff; color: var(--text); border: 1px solid var(--border);
+    font-weight: 600; font-size: 15px;
   }
   .btn-quiet {
     background: transparent; color: var(--muted); border: 1px solid var(--border); font-weight: 600; font-size: 15px;
@@ -90,8 +101,8 @@
     display: flex; flex-direction: column;
   }
   .pick-hero {
-    flex: 1; display: flex; align-items: center; justify-content: center;
-    margin: 0; padding: 24px 0 12px;
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    margin: 0; padding: 24px 0 12px; gap: 0;
   }
   .pick-hero .file-btn {
     min-height: 56px; font-size: 18px; border-radius: 18px;
@@ -100,6 +111,14 @@
   }
   .pick-hero .file-btn input {
     position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;
+  }
+  .pick-hero #progressBlock {
+    max-width: 320px; width: 100%; margin: 0;
+  }
+  .pick-hero.is-busy .file-btn,
+  .pick-hero.is-busy #btnFaceExprHome,
+  .pick-hero.is-busy #crashHint {
+    display: none !important;
   }
   .home-bottom {
     margin-top: auto; padding: 8px 0 calc(8px + var(--safe-bottom));
@@ -137,9 +156,90 @@
   .progress-wrap { margin-top: 12px; width: 100%; }
   .progress { height: 8px; background: var(--chip); border-radius: 999px; overflow: hidden; }
   .progress > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .12s; }
+  @keyframes progressSlide {
+    0% { transform: translateX(-120%); }
+    100% { transform: translateX(280%); }
+  }
+  .progress.indet > i {
+    width: 36%; transition: none;
+    animation: progressSlide 1.15s ease-in-out infinite alternate;
+  }
   .status { font-size: 14px; color: var(--muted); margin-top: 8px; }
   .progress-row { display: flex; gap: 8px; margin-top: 12px; }
   .progress-row .btn { flex: 1; min-height: 44px; }
+
+  .reason-chips {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin: 0 0 6px; min-width: 0; max-width: 100%;
+  }
+  .chip {
+    box-sizing: border-box;
+    height: 32px; padding: 0 12px; border-radius: 999px;
+    font-size: 15px; line-height: 32px; font-family: inherit;
+    display: inline-flex; align-items: center; justify-content: center;
+    white-space: nowrap; flex: 0 0 auto; max-width: 100%;
+    border: 0; margin: 0; background: var(--chip-neutral); color: var(--chip-neutral-text);
+  }
+  .chip-main { font-weight: 700; }
+  .chip-sub, .chip-more { font-weight: 600; }
+  .chip-main.tone-keep { background: var(--keep-fill); color: var(--keep-text); }
+  .chip-sub.tone-keep { background: var(--keep-fill-sub); color: var(--keep-text); }
+  .chip-main.tone-del { background: var(--del-fill); color: var(--del-text); }
+  .chip-sub.tone-del { background: var(--del-fill-sub); color: var(--del-text); }
+  .chip-amber { background: var(--amber-bg); color: var(--amber-text); }
+  .chip-more { background: var(--chip-neutral); color: var(--chip-neutral-text); }
+  button.chip-jump {
+    cursor: pointer; -webkit-appearance: none; appearance: none;
+    position: relative; gap: 2px; padding-right: 8px; color: inherit; background: inherit;
+  }
+  button.chip-jump::after {
+    content: ""; position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%; min-width: 44px; height: 44px;
+  }
+  .chip-jump .chevron {
+    font-size: 13px; font-weight: 700; line-height: 1;
+    opacity: 0.7; margin-left: 1px;
+  }
+  .reason-expl {
+    font-size: 14px; color: var(--muted); line-height: 1.4;
+    margin: 0 0 10px; max-width: 100%;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .pos-tag {
+    position: absolute; top: 10px; right: 10px; z-index: 2;
+    background: rgba(255, 255, 255, 0.9); color: #14171C;
+    font-size: 13px; font-weight: 600; line-height: 1.2;
+    border-radius: 8px; padding: 4px 8px; pointer-events: none;
+  }
+  .pos-line {
+    font-size: 13px; color: var(--muted); font-weight: 600;
+    line-height: 1.3; margin: 0 0 6px;
+  }
+  .expr-changed-flag {
+    display: inline-flex; align-items: center;
+    height: 28px; padding: 0 10px; margin: 0 0 8px;
+    border-radius: 999px; font-size: 13px; font-weight: 600;
+    background: var(--keep-fill); color: var(--keep-text);
+  }
+  .group-block .expr-changed-flag { margin: 0 0 8px; }
+  .card-compact .reason-chips { margin: 0; }
+  .card-compact .chip {
+    height: 28px; line-height: 28px; font-size: 13px;
+    padding: 0 6px; min-width: 0; max-width: 100%;
+    overflow: hidden; text-overflow: ellipsis;
+    justify-content: flex-start; flex: 0 1 auto;
+  }
+  /* v10o: ellipsis lives on an inner block span (text-overflow never applies to a flex container's text). */
+  .card-compact .chip-text {
+    display: block; min-width: 0; max-width: 100%;
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis; text-align: left;
+  }
+  .card-compact .meta-compact { min-width: 0; max-width: 100%; }
+  .card-compact .expr-changed-flag {
+    height: auto; padding: 0; margin: 6px 0 0;
+    background: none; font-size: 13px;
+  }
 
   .section-title { font-size: 20px; font-weight: 700; margin: 8px 0 12px; letter-spacing: -0.02em; }
   .del-headline {
@@ -163,10 +263,18 @@
   }
   #summaryCounts {
     flex: 1; min-width: 0; font-size: 15px; color: var(--muted);
+    overflow: hidden;
+  }
+  #summaryCounts .summary-nums {
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
+  #summaryCounts .expr-swap-line {
+    display: block; font-size: 14px; font-weight: 600; color: #15803D;
+    line-height: 1.3; margin-top: 1px;
+  }
+  body.has-expr-swap { --summary-h: 72px; }
   #summaryCounts strong { font-size: 17px; font-weight: 800; }
-  #summaryCounts .c-keep strong { color: var(--keep); }
+  #summaryCounts .c-keep strong { color: #15803D; }
   #summaryCounts .c-del strong { color: var(--del); }
   #summaryCounts .c-total strong { color: var(--text); }
   .btn-more {
@@ -177,7 +285,7 @@
   }
   .more-menu {
     position: absolute; top: calc(var(--summary-h) + var(--safe-top) - 4px); right: max(10px, calc(50% - 240px + 10px));
-    min-width: 160px; background: var(--card); border: 1px solid var(--border);
+    min-width: 220px; background: var(--card); border: 1px solid var(--border);
     border-radius: 14px; box-shadow: var(--shadow); padding: 6px; z-index: 36;
   }
   .more-menu button {
@@ -186,6 +294,42 @@
     font-size: 15px; font-weight: 600; color: var(--text); cursor: pointer; font-family: inherit;
   }
   .more-menu button:active { background: var(--chip); }
+  .more-menu button.more-menu-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    width: 100%; min-height: 44px; padding: 10px 12px; border: none; background: transparent;
+    border-radius: 10px; font-size: 15px; font-weight: 600; color: var(--text);
+    cursor: pointer; font-family: inherit; text-align: left; box-sizing: border-box;
+  }
+  .more-menu button.more-menu-row:active { background: var(--chip); }
+  .more-menu button.more-menu-row > span { font-size: 15px; font-weight: 600; color: var(--text); }
+  .more-menu-divider { height: 1px; background: #E5E7EB; margin: 4px 6px; border: 0; }
+  .ios-switch {
+    display: inline-block; position: relative; width: 51px; height: 31px;
+    min-width: 51px; min-height: 31px; flex-shrink: 0; padding: 0; box-sizing: border-box;
+    border: none; border-radius: 31px; background: #E5E7EB; cursor: pointer;
+    pointer-events: none; vertical-align: middle;
+  }
+  .ios-switch[aria-checked="true"], .ios-switch.is-on { background: #16A34A; }
+  .ios-switch::after {
+    content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px;
+    border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25);
+    transition: transform 180ms;
+  }
+  .ios-switch[aria-checked="true"]::after, .ios-switch.is-on::after { transform: translateX(20px); }
+  @media (prefers-reduced-motion: reduce) { .ios-switch::after { transition: none; } }
+  .home-face-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    margin-top: 16px; min-height: 44px; width: 100%; max-width: 320px;
+    padding: 0; border: none; background: transparent; cursor: pointer;
+    font-family: inherit; text-align: left;
+  }
+  .home-face-row > span { font-size: 14px; color: #6B7280; font-weight: 400; }
+  .crash-hint {
+    margin-top: 8px; width: 100%; max-width: 320px; box-sizing: border-box;
+    background: #FEF3E2; border: 1px solid #F5D9A8; border-radius: 12px;
+    padding: 10px 12px; font-size: 14px; color: #92400E; line-height: 1.5;
+    text-align: left; font-weight: 400;
+  }
 
   .result-hint { margin: 10px 0 12px; padding-right: 44px; }
   /* v9: result filter (sticky under summary bar, ≤96px) */
@@ -229,11 +373,12 @@
   .card.filtered { border-width: 2px; }
   .card.filtered.delete { border-color: #E5484D; }
   .card.filtered.keep { border-color: #16A34A; }
-  .card.filtered.rescued .thumb-wrap,
+  .card.filtered.rescued .thumb-wrap > img,
+  .card.filtered.rescued .thumb-placeholder,
   .card.filtered.rescued .meta > :not(.card-controls) { opacity: 0.6; transition: opacity 150ms; }
   .btn-rescue {
     display: flex; align-items: center; justify-content: center; width: 100%; min-height: 44px;
-    border-radius: 12px; border: 1.5px solid var(--keep); background: var(--card); color: var(--keep);
+    border-radius: 12px; border: 1.5px solid var(--keep); background: var(--card); color: #15803D;
     font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
   }
   .rescued-note {
@@ -242,14 +387,15 @@
   }
   .rescued-note.to-del { background: rgba(229, 72, 77, 0.08); color: #B42318; }
   .card.just-moved { opacity: 0.6; }
-  .btn-rescue.done { border-color: #16A34A; color: #16A34A; background: #fff; font-weight: 700; }
+  .btn-rescue.done { border-color: #16A34A; color: #15803D; background: #fff; font-weight: 700; }
   .group-ref {
     display: flex; align-items: center; gap: 10px; width: 100%; margin: 0 0 10px; min-height: 44px;
     font-size: 14px; color: var(--muted); line-height: 1.35;
+    border: 0; background: none; padding: 0; font-family: inherit; text-align: left; cursor: pointer;
   }
   .group-ref .gr-thumb {
-    flex-shrink: 0; width: 56px; height: 42px; border-radius: 6px; overflow: hidden; background: #E8EAED;
-    border: none; padding: 0; cursor: pointer; position: relative;
+    flex-shrink: 0; width: 48px; height: 36px; border-radius: 6px; overflow: hidden; background: #E8EAED;
+    border: none; padding: 0; position: relative; pointer-events: none;
   }
   .group-ref .gr-thumb::before { content: ""; position: absolute; inset: -1px -0px; }
   .group-ref .gr-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -264,7 +410,7 @@
   .confirm-summary .cs-line { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 4px 0; }
   .confirm-summary .cs-lbl { font-size: 16px; font-weight: 600; color: var(--text); }
   .confirm-summary .cs-num { font-size: 20px; font-weight: 800; min-width: 4.5em; text-align: right; }
-  .confirm-summary .cs-keep .cs-num { color: var(--keep); }
+  .confirm-summary .cs-keep .cs-num { color: #15803D; }
   .confirm-summary .cs-del .cs-num { color: var(--del); }
   .confirm-summary .cs-man .cs-lbl, .confirm-summary .cs-man .cs-num { font-size: 14px; font-weight: 600; color: var(--muted); }
   .steps { margin: 0 0 14px; }
@@ -371,6 +517,7 @@
     margin-top: 8px;
   }
   .group-extras.hidden { display: none !important; }
+  .card.jump-hl { outline: 2px solid var(--accent); outline-offset: 2px; }
   .card-compact { box-shadow: none; }
   .card-compact .thumb-wrap { border-radius: 0; }
   .card-compact .meta-compact { padding: 8px; }
@@ -617,9 +764,17 @@
   }
   .card-compact .btn-view-full { margin-top: 6px; }
 
+.face-debug {position:absolute;pointer-events:none;border:2px solid #2563EB;z-index:2;}
+.face-ready-toast {position:fixed;left:50%;transform:translateX(-50%);bottom:20px;z-index:1200;max-width:calc(100vw - 24px);box-sizing:border-box;white-space:nowrap;background:#14171C;color:#fff;font-size:14px;line-height:1.5;border-radius:12px;padding:12px 14px;pointer-events:none;opacity:1;transition:opacity 180ms;}
+.face-ready-toast.leaving {opacity:0;}
+@media (prefers-reduced-motion:reduce) {.face-ready-toast {transition:none;}}
+.face-keyword {font-weight:700;color:#15803D;}
+.blink-warning {display:inline-flex;align-items:center;box-sizing:border-box;height:24px;margin-left:8px;padding:0 8px;border-radius:999px;background:#FEF3E2;color:#D97706;font-size:14px;font-weight:700;line-height:24px;white-space:nowrap;vertical-align:middle;}
+.viewer-blink-warning {color:#D97706;font-size:inherit;}
 </style>
 </head>
 <body class="screen-home">
+<div id="faceReadyToast" class="face-ready-toast hidden" role="status" aria-live="polite" data-default-msg="臉部判斷已就緒，下次整理會套用">臉部判斷已就緒，下次整理會套用</div>
 <div class="summary-bar viewer-page-chrome" id="summaryBar">
   <div class="summary-bar-inner">
     <div id="summaryCounts"></div>
@@ -627,6 +782,11 @@
   </div>
   <div class="more-menu hidden" id="moreMenu" role="menu">
     <button type="button" id="btnRestoreAll" role="menuitem">全部還原</button>
+    <button type="button" class="more-menu-row" id="btnFaceExprMenu" role="menuitemcheckbox" aria-checked="true">
+      <span>判斷表情</span>
+      <i class="ios-switch" id="faceExprSwitchMenu" aria-hidden="true" aria-checked="true" class="is-on"></i>
+    </button>
+    <div class="more-menu-divider" role="separator"></div>
     <button type="button" id="btnResultAdv" role="menuitem">進階</button>
     <button type="button" id="btnReselect" role="menuitem">重選照片</button>
   </div>
@@ -642,12 +802,18 @@
         選照片
         <input id="fileInput" type="file" accept="image/*" multiple />
       </label>
-    </div>
-    <div id="progressBlock" class="progress-wrap panel hidden">
-      <div class="progress"><i id="progressBar"></i></div>
-      <div class="status" id="progressText">準備中…</div>
-      <div class="progress-row">
-        <button type="button" class="btn btn-ghost" id="btnPause">暫停</button>
+      <button type="button" class="home-face-row" id="btnFaceExprHome" aria-pressed="true">
+        <span>判斷表情（較耗記憶體）</span>
+        <i class="ios-switch" id="faceExprSwitchHome" aria-hidden="true" aria-checked="true" class="is-on"></i>
+      </button>
+      <p id="crashHint" class="crash-hint hidden" role="status" aria-live="polite">上次分析中斷，已先關閉判斷表情，可手動打開</p>
+      <div id="progressBlock" class="progress-wrap panel hidden">
+        <div class="progress"><i id="progressBar"></i></div>
+        <div class="status" id="progressText">準備中…</div>
+        <div class="progress-row">
+          <button type="button" class="btn btn-ghost hidden" id="btnSkipFaceWait">先不判斷表情，直接開始</button>
+          <button type="button" class="btn btn-ghost" id="btnPause">暫停</button>
+        </div>
       </div>
     </div>
     <div id="onlyBadPanel" class="only-bad-panel hidden" role="status">
@@ -784,6 +950,7 @@
   if (!CSS.escape) CSS.escape = function (s) { return String(s).replace(/[^a-zA-Z0-9_-]/g, function (c) { return "\\" + c; }); };
 
   const ANALYZE_MAX = 512;   // metrics + perceptual hash (v5 parity)
+  const FACE_INPUT_MAX = 512; // tried 256; reverted — face winners on MIX02 and real01 groups C/D changed
   const THUMB_MAX = 256;     // finish-page grid thumbs (always)
   const DISPLAY_MAX = 720;   // result-card display JPEG (lazy, viewport)
   const BATCH_CONCURRENCY = 6;
@@ -791,17 +958,17 @@
   const DISPLAY_LIVE_CAP = 12;     // nearby live 720 URLs / in-flight+queued encodes
   const DISPLAY_ENC_CONCURRENCY = 2;
   const BATCH = BATCH_CONCURRENCY;
-  const BUILD = "v9e"; // memory-only decode-pool hotfix of v9d; decisions unchanged
   const DB_NAME = "photo-cull-v1";
   const STORE = "choices";
   const SETTINGS_KEY = "photo-cull-settings-v1";
+  const ANALYSIS_FLAG_KEY = "analysisInProgress";
   const HINT_KEY = "photo-cull-hint-dismissed-v1";
   /**
    * ANALYSIS_VERSION 9 — cold stores analysis + 256 thumb only (no eager 720).
    * Rejects v≤8 caches so we never revive stale v7/v8b labels or require missing displayBlob.
    * Optional displayBlob may be written later after lazy 720 encode.
    */
-  const ANALYSIS_VERSION = 9;
+  const ANALYSIS_VERSION = 11;
   const SEG_GAP_MS = 3 * 60 * 1000;
 
   let photos = [];
@@ -831,12 +998,19 @@
     progressBlock: document.getElementById("progressBlock"),
     progressBar: document.getElementById("progressBar"),
     progressText: document.getElementById("progressText"),
+    progressTrack: document.querySelector("#progressBlock .progress"),
+    btnSkipFaceWait: document.getElementById("btnSkipFaceWait"),
     btnPause: document.getElementById("btnPause"),
     cards: document.getElementById("cards"),
     summaryBar: document.getElementById("summaryBar"),
     summaryCounts: document.getElementById("summaryCounts"),
     btnMore: document.getElementById("btnMore"),
     moreMenu: document.getElementById("moreMenu"),
+    btnFaceExprMenu: document.getElementById("btnFaceExprMenu"),
+    faceExprSwitchMenu: document.getElementById("faceExprSwitchMenu"),
+    btnFaceExprHome: document.getElementById("btnFaceExprHome"),
+    faceExprSwitchHome: document.getElementById("faceExprSwitchHome"),
+    crashHint: document.getElementById("crashHint"),
     btnRestoreAll: document.getElementById("btnRestoreAll"),
     btnResultAdv: document.getElementById("btnResultAdv"),
     resultAdvPanel: document.getElementById("resultAdvPanel"),
@@ -889,23 +1063,109 @@
     el.hashLabel.textContent = el.hashSlider.value;
     el.timeLabel.textContent = el.timeSlider.value;
   }
+  function readFaceExprPref() {
+    try {
+      const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "null");
+      if (s && s.faceExpr === false) return false;
+    } catch (_) {}
+    return true; // default ON
+  }
+  let faceExprPref = readFaceExprPref();
   function loadSettings() {
     try {
       const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "null");
-      if (!s) return;
+      if (!s) { syncFaceExprUI(); syncLabels(); return; }
       if (s.sharp != null) el.sharpSlider.value = s.sharp;
       if (s.over != null) el.overSlider.value = s.over;
       if (s.under != null) el.underSlider.value = s.under;
       if (s.hash != null) el.hashSlider.value = s.hash;
       if (s.time != null) el.timeSlider.value = s.time;
+      if (s.faceExpr === false) faceExprPref = false;
+      else if (s.faceExpr === true) faceExprPref = true;
     } catch (_) {}
+    syncFaceExprUI();
     syncLabels();
   }
   function saveSettings() {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify({
       sharp: +el.sharpSlider.value, over: +el.overSlider.value, under: +el.underSlider.value,
       hash: +el.hashSlider.value, time: +el.timeSlider.value,
+      faceExpr: !!faceExprPref,
     }));
+  }
+  function syncFaceExprUI() {
+    const on = !!faceExprPref;
+    if (el.btnFaceExprMenu) el.btnFaceExprMenu.setAttribute("aria-checked", on ? "true" : "false");
+    if (el.faceExprSwitchMenu) {
+      el.faceExprSwitchMenu.setAttribute("aria-checked", on ? "true" : "false");
+      el.faceExprSwitchMenu.classList.toggle("is-on", on);
+    }
+    if (el.btnFaceExprHome) el.btnFaceExprHome.setAttribute("aria-pressed", on ? "true" : "false");
+    if (el.faceExprSwitchHome) {
+      el.faceExprSwitchHome.setAttribute("aria-checked", on ? "true" : "false");
+      el.faceExprSwitchHome.classList.toggle("is-on", on);
+    }
+  }
+  let crashHintVisible = false;
+  function syncCrashHint() {
+    if (el.crashHint) el.crashHint.classList.toggle("hidden", !crashHintVisible);
+  }
+  function hideCrashHint() {
+    if (!crashHintVisible) return;
+    crashHintVisible = false;
+    syncCrashHint();
+  }
+  function setAnalysisFlag() {
+    try {
+      localStorage.setItem(ANALYSIS_FLAG_KEY, JSON.stringify({ ts: Date.now(), faceExpr: !!faceExprPref }));
+    } catch (_) {}
+  }
+  function clearAnalysisFlag() {
+    try { localStorage.removeItem(ANALYSIS_FLAG_KEY); } catch (_) {}
+  }
+  function persistFaceExprPref() {
+    try {
+      const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "null") || {};
+      s.faceExpr = !!faceExprPref;
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+    } catch (_) {}
+  }
+  function recoverInterruptedAnalysis() {
+    let flag = null;
+    try {
+      const raw = localStorage.getItem(ANALYSIS_FLAG_KEY);
+      if (raw) flag = JSON.parse(raw);
+    } catch (_) { flag = { faceExpr: true }; }
+    clearAnalysisFlag();
+    if (!flag) return;
+    // Only auto-disable if the interrupted run had 判斷表情 ON.
+    if (flag.faceExpr === true) {
+      faceExprPref = false;
+      persistFaceExprPref();
+      crashHintVisible = true;
+      syncFaceExprUI();
+      syncCrashHint();
+    }
+  }
+  function showNextRunToast() {
+    showFaceReadyToast("下次選照片時生效");
+  }
+  function setFaceExprPref(on, opts) {
+    on = !!on;
+    const changed = on !== faceExprPref;
+    faceExprPref = on;
+    saveSettings();
+    syncFaceExprUI();
+    if (on) hideCrashHint();
+    // Mid-run / mid-results: do not mutate finished choices. Next processFiles snapshots the pref.
+    if (on && !readyFaceTask) {
+      getFaceTask().catch(function (err) {
+        faceRuntimeStats.errors.push(String(err));
+        console.warn("Background face model unavailable", err);
+      });
+    }
+    const onResults = document.body.classList.contains("screen-result") || document.body.classList.contains("screen-finish") || processing;
+    if (changed && onResults) showNextRunToast();
   }
 
   function fileKey(name, size, lastModified) { return name + "|" + size + "|" + lastModified; }
@@ -967,6 +1227,362 @@
     } catch (_) {}
   }
 
+  // Temporary 512px face-input JPEGs. Separate DB so we never bump photo-cull-v1.
+  // Pass 2 reads these instead of decoding full-resolution originals. Dropped after
+  // the face pass, at startup, and on 重選照片. Never kept on photo objects.
+  // v10j2: serialize encode+put one photo at a time; wait for the IDB transaction
+  // 'complete' before the next; never queue pending JPEG blobs. A single worker
+  // (not a pool) encodes then puts, so the JPEG stays off the page heap and
+  // sibling analysis jobs can keep decoding. The next bitmap is not created
+  // until this transaction has completed. QuotaExceededError on put skips that
+  // photo's scratch; pass 2 falls back to the original.
+  const FACE_SCRATCH_DB = "photo-cull-face-scratch-v1";
+  const FACE_SCRATCH_STORE = "blobs";
+  const FACE_SCRATCH_QUALITY = 0.95;
+  const faceScratchStats = {
+    encodeMs: 0, writeMs: 0, blobsWritten: 0, blobsPruned: 0, blobsUsed: 0,
+    liveBytes: 0, blobBytesPeak: 0, blobBytesAfterPrune: 0,
+    blobBytesAfterPass2: 0, blobBytesAfterCleanup: 0,
+    estimateBefore: 0, estimatePeak: 0, estimateAfterPass2: 0, estimateAfterCleanup: 0,
+    heapBefore: 0, heapAfterPass1: 0, heapAfterPrune: 0, heapAfterPass2: 0, heapAfterCleanup: 0, heapPeak: 0,
+    quotaFailures: 0, quotaKeys: []
+  };
+  let faceScratchWorker = null, faceScratchReqId = 0;
+  const faceScratchWaiters = {};
+  let faceScratchWriteTail = Promise.resolve();
+  let faceScratchQuotaStub = null;
+  // IDB put/get/prune/drop run in this single worker so Chrome's blob-store
+  // bookkeeping stays off the page's usedJSHeapSize (main-thread puts
+  // spiked face1000 heap by ~15MB). Encoding is NOT in the worker.
+  const FACE_SCRATCH_WORKER_CODE = `
+    var DB='photo-cull-face-scratch-v1', STORE='blobs', conn=null;
+    function open(){
+      if(conn) return Promise.resolve(conn);
+      return new Promise(function(res,rej){
+        var q=indexedDB.open(DB,1);
+        q.onupgradeneeded=function(){ if(!q.result.objectStoreNames.contains(STORE)) q.result.createObjectStore(STORE); };
+        q.onsuccess=function(){ conn=q.result; conn.onclose=function(){conn=null;}; conn.onversionchange=function(){ try{conn.close();}catch(e){} conn=null; }; res(conn); };
+        q.onerror=function(){ rej(q.error); };
+      });
+    }
+    function close(){ if(conn){ try{conn.close();}catch(e){} conn=null; } }
+    function txDone(tx){ return new Promise(function(res,rej){ tx.oncomplete=function(){res();}; tx.onerror=function(){rej(tx.error);}; tx.onabort=function(){rej(tx.error||new Error('abort'));}; }); }
+    function isQuota(err){
+      if(!err) return false;
+      var n=err.name||'';
+      var s=String(err&&err.message?err.message:err);
+      return n==='QuotaExceededError'||n==='NS_ERROR_DOM_QUOTA_REACHED'||/QuotaExceeded/i.test(s);
+    }
+    self.onmessage=async function(e){
+      var d=e.data||{}, id=d.id, op=d.op;
+      try{
+        if(op==='put'){
+          var buf=d.buf;
+          try{
+            // Store raw bytes, not a Blob — Chrome's IDB Blob store has been
+            // observed to credit tens of MB to the page usedJSHeapSize.
+            var size=(buf&&buf.byteLength)||0;
+            var db=await open();
+            var tx=db.transaction(STORE,'readwrite');
+            tx.objectStore(STORE).put(buf,d.key);
+            await txDone(tx);
+            buf=null;
+            self.postMessage({id:id,ok:true,size:size});
+          }catch(err){
+            buf=null;
+            self.postMessage({id:id,ok:false,error:String(err),name:err&&err.name,quota:isQuota(err)});
+          }
+        } else if(op==='encodeput'){
+          // One in-flight only: the page does not post the next until we reply.
+          var bmp=d.bitmap, quality=d.quality||0.95, key=d.key, blob=null;
+          try{
+            var te0=performance.now();
+            var w=bmp.width, h=bmp.height;
+            var oc=new OffscreenCanvas(w,h);
+            oc.getContext('2d',{alpha:false}).drawImage(bmp,0,0);
+            try{ bmp.close(); }catch(e){}
+            bmp=null;
+            blob=await oc.convertToBlob({type:'image/jpeg',quality:quality});
+            oc.width=1; oc.height=1; oc=null;
+            var size=blob.size||0;
+            var encodeMs=performance.now()-te0;
+            var tw0=performance.now();
+            var bytes=await blob.arrayBuffer();
+            blob=null;
+            var db=await open();
+            var tx=db.transaction(STORE,'readwrite');
+            tx.objectStore(STORE).put(bytes,key);
+            await txDone(tx);
+            bytes=null;
+            self.postMessage({id:id,ok:true,size:size,encodeMs:encodeMs,writeMs:performance.now()-tw0});
+          }catch(err){
+            try{ if(bmp) bmp.close(); }catch(e){}
+            bmp=null; blob=null;
+            self.postMessage({id:id,ok:false,error:String(err),name:err&&err.name,quota:isQuota(err)});
+          }
+        } else if(op==='get'){
+          var db=await open();
+          var v=await new Promise(function(res,rej){ var r=db.transaction(STORE,'readonly').objectStore(STORE).get(d.key); r.onsuccess=function(){res(r.result||null);}; r.onerror=function(){rej(r.error);}; });
+          var bytes=null;
+          if(v && v.byteLength) bytes=v;
+          else if(v && v.size) bytes=await v.arrayBuffer();
+          v=null;
+          if(!bytes){ self.postMessage({id:id,ok:true,bitmap:null}); }
+          else {
+            var blob=new Blob([bytes],{type:'image/jpeg'});
+            bytes=null;
+            var bmp=await createImageBitmap(blob);
+            blob=null;
+            self.postMessage({id:id,ok:true,bitmap:bmp},[bmp]);
+          }
+        } else if(op==='prune'){
+          var keep=d.keep||[];
+          var keepSet={}; for(var i=0;i<keep.length;i++) keepSet[keep[i]]=1;
+          var db=await open();
+          var keys=await new Promise(function(res,rej){ var r=db.transaction(STORE,'readonly').objectStore(STORE).getAllKeys(); r.onsuccess=function(){res(r.result||[]);}; r.onerror=function(){rej(r.error);}; });
+          var drop=[]; for(var i=0;i<keys.length;i++) if(!keepSet[keys[i]]) drop.push(keys[i]);
+          var gone=0;
+          if(drop.length){
+            var sizes=await Promise.all(drop.map(function(k){ return new Promise(function(res){ var r=db.transaction(STORE,'readonly').objectStore(STORE).get(k); r.onsuccess=function(){var v=r.result; res((v&&(v.byteLength||v.size))||0);}; r.onerror=function(){res(0);}; }); }));
+            for(var i=0;i<sizes.length;i++) gone+=sizes[i];
+            var tx=db.transaction(STORE,'readwrite');
+            for(var i=0;i<drop.length;i++) tx.objectStore(STORE).delete(drop[i]);
+            await txDone(tx);
+          }
+          self.postMessage({id:id,ok:true,pruned:drop.length,gone:gone});
+        } else if(op==='drop'){
+          try{
+            var db=await open();
+            var tx=db.transaction(STORE,'readwrite');
+            tx.objectStore(STORE).clear();
+            await Promise.race([txDone(tx), new Promise(function(res){ setTimeout(res,2000); })]);
+          }catch(e){}
+          close();
+          await Promise.race([
+            new Promise(function(res){ var q=indexedDB.deleteDatabase(DB); q.onsuccess=q.onerror=q.onblocked=function(){res();}; }),
+            new Promise(function(res){ setTimeout(res,2000); })
+          ]);
+          self.postMessage({id:id,ok:true});
+        } else {
+          self.postMessage({id:id,ok:false,error:'unknown op'});
+        }
+      }catch(err){ self.postMessage({id:id,ok:false,error:String(err),name:err&&err.name,quota:isQuota(err)}); }
+    };
+  `;
+  function resetFaceScratchStats() {
+    faceScratchStats.encodeMs=0; faceScratchStats.writeMs=0;
+    faceScratchStats.blobsWritten=0; faceScratchStats.blobsPruned=0; faceScratchStats.blobsUsed=0;
+    faceScratchStats.liveBytes=0; faceScratchStats.blobBytesPeak=0;
+    faceScratchStats.blobBytesAfterPrune=0; faceScratchStats.blobBytesAfterPass2=0;
+    faceScratchStats.blobBytesAfterCleanup=0;
+    faceScratchStats.estimateBefore=0; faceScratchStats.estimatePeak=0;
+    faceScratchStats.estimateAfterPass2=0; faceScratchStats.estimateAfterCleanup=0;
+    faceScratchStats.heapBefore=0; faceScratchStats.heapAfterPass1=0;
+    faceScratchStats.heapAfterPrune=0; faceScratchStats.heapAfterPass2=0;
+    faceScratchStats.heapAfterCleanup=0; faceScratchStats.heapPeak=0;
+    faceScratchStats.quotaFailures=0; faceScratchStats.quotaKeys=[];
+  }
+  function sampleJsHeap() {
+    try { return (performance.memory && performance.memory.usedJSHeapSize) || 0; } catch (_) { return 0; }
+  }
+  async function sampleStorageEstimate() {
+    try {
+      if (navigator.storage && navigator.storage.estimate) {
+        const used = await Promise.race([
+          navigator.storage.estimate().then(function (e) { return (e && e.usage) || 0; }),
+          new Promise(function (resolve) { setTimeout(function () { resolve(-1); }, 2000); })
+        ]);
+        if (used < 0) return faceScratchStats.estimatePeak || 0;
+        if (used > faceScratchStats.estimatePeak) faceScratchStats.estimatePeak = used;
+        return used;
+      }
+    } catch (_) {}
+    return 0;
+  }
+  function isQuotaExceededError(err) {
+    if (!err) return false;
+    const n = err.name || "";
+    const s = String(err && err.message ? err.message : err);
+    return n === "QuotaExceededError" || n === "NS_ERROR_DOM_QUOTA_REACHED" || /QuotaExceeded/i.test(s);
+  }
+  function quotaStubHits(key) {
+    const stub = faceScratchQuotaStub;
+    if (!stub) return false;
+    if (stub === "all") return true;
+    if (typeof stub === "number") {
+      if (stub > 0) { faceScratchQuotaStub = stub - 1; return true; }
+      return false;
+    }
+    if (Array.isArray(stub)) return stub.indexOf(key) >= 0;
+    if (stub && typeof stub.has === "function") return stub.has(key);
+    if (typeof stub === "function") return !!stub(key);
+    return false;
+  }
+  function ensureFaceScratchWorker() {
+    if (!allowPoolWorkers()) return null;
+    if (faceScratchWorker) return faceScratchWorker;
+    try {
+      const url = URL.createObjectURL(new Blob([FACE_SCRATCH_WORKER_CODE], { type: "text/javascript" }));
+      const w = new Worker(url);
+      URL.revokeObjectURL(url);
+      w.onmessage = function (e) {
+        const waiter = faceScratchWaiters[e.data && e.data.id];
+        if (waiter) { delete faceScratchWaiters[e.data.id]; waiter(e.data); }
+      };
+      w.onerror = function (err) { console.warn("faceScratch worker", err); };
+      faceScratchWorker = w;
+      return faceScratchWorker;
+    } catch (err) { console.warn("faceScratch worker create", err); faceScratchWorker = null; return null; }
+  }
+  function faceScratchRpc(payload, transfer) {
+    const worker = ensureFaceScratchWorker();
+    if (!worker) return Promise.reject(new Error("no faceScratch worker"));
+    const id = ++faceScratchReqId;
+    payload.id = id;
+    return new Promise(function (resolve, reject) {
+      const t = setTimeout(function () { delete faceScratchWaiters[id]; reject(new Error("faceScratch timeout "+payload.op)); }, 30000);
+      faceScratchWaiters[id] = function (data) { clearTimeout(t); resolve(data); };
+      try { worker.postMessage(payload, transfer || []); }
+      catch (err) { clearTimeout(t); delete faceScratchWaiters[id]; reject(err); }
+    });
+  }
+  async function faceScratchPut(key, blob) {
+    if (quotaStubHits(key)) {
+      const err = new DOMException("The quota has been exceeded.", "QuotaExceededError");
+      throw err;
+    }
+    const mime = (blob && blob.type) || "image/jpeg";
+    const sizeHint = (blob && blob.size) || 0;
+    const buf = await blob.arrayBuffer();
+    // Drop the page-heap Blob before the worker write. The ArrayBuffer is
+    // transferred, so this tab no longer holds the JPEG bytes.
+    blob = null;
+    const r = await faceScratchRpc({ op: "put", key: key, buf: buf, mime: mime }, [buf]);
+    if (!r || !r.ok) {
+      const err = new Error((r && r.error) || "put failed");
+      err.name = (r && r.name) || "Error";
+      if (r && r.quota) err.name = "QuotaExceededError";
+      throw err;
+    }
+    const size = r.size || sizeHint;
+    faceScratchStats.liveBytes += size;
+    if (faceScratchStats.liveBytes > faceScratchStats.blobBytesPeak) faceScratchStats.blobBytesPeak = faceScratchStats.liveBytes;
+    return size;
+  }
+  async function faceScratchGet(key) {
+    const r = await faceScratchRpc({ op: "get", key: key });
+    if (!r || !r.ok) return null;
+    // Worker decodes the JPEG and transfers an ImageBitmap so the JPEG
+    // bytes never land on the page heap (256 × ~69KB was a ~18MB pass-2 climb).
+    if (r.bitmap) return { bitmap: r.bitmap };
+    if (r.buf) return { blob: new Blob([r.buf], { type: "image/jpeg" }) };
+    if (r.blob) return { blob: r.blob };
+    return null;
+  }
+  function faceScratchByteTotal() {
+    return faceScratchStats.liveBytes;
+  }
+  async function faceScratchPruneExcept(keepIds) {
+    const keep = [];
+    if (keepIds && typeof keepIds.forEach === "function") keepIds.forEach(function (k) { keep.push(k); });
+    const r = await faceScratchRpc({ op: "prune", keep: keep });
+    if (!r || !r.ok) { console.warn("faceScratch prune", r && r.error); return; }
+    faceScratchStats.blobsPruned += r.pruned || 0;
+    faceScratchStats.liveBytes = Math.max(0, faceScratchStats.liveBytes - (r.gone || 0));
+    faceScratchStats.blobBytesAfterPrune = faceScratchStats.liveBytes;
+  }
+  // Encode the 512 canvas, then put, one photo at a time. The previous
+  // transaction must have fired 'complete' (and the JPEG Blob must already
+  // have been dropped) before this photo starts encoding. Callers that share
+  // the analysis loop still hold only their private 512 canvas while waiting
+  // — never a JPEG blob queue.
+  function faceScratchEnqueue(fn) {
+    const run = faceScratchWriteTail.then(fn, fn);
+    faceScratchWriteTail = run.then(function () {}, function () {});
+    return run;
+  }
+  async function encodeScratchJpeg(canvas, quality) {
+    if (typeof OffscreenCanvas === "function") {
+      const oc = new OffscreenCanvas(canvas.width, canvas.height);
+      oc.getContext("2d", { alpha: false }).drawImage(canvas, 0, 0);
+      const blob = await oc.convertToBlob({ type: "image/jpeg", quality: quality });
+      oc.width = 1; oc.height = 1;
+      return blob;
+    }
+    return canvasToJpegBlob(canvas, quality);
+  }
+  async function faceScratchEncodePutFromCanvas(key, canvas) {
+    // Wait for the previous write's 'complete' BEFORE creating a bitmap
+    // so we never queue pending JPEGs. A single worker encodes, stores an
+    // ArrayBuffer (not a Blob) in IDB, and replies after transaction complete.
+    return faceScratchEnqueue(async function () {
+      let bmp = null;
+      try {
+        if (quotaStubHits(key)) {
+          throw new DOMException("The quota has been exceeded.", "QuotaExceededError");
+        }
+        if (typeof createImageBitmap === "function") {
+          bmp = await createImageBitmap(canvas);
+          const r = await faceScratchRpc({ op: "encodeput", key: key, bitmap: bmp, quality: FACE_SCRATCH_QUALITY }, [bmp]);
+          bmp = null;
+          if (!r || !r.ok) {
+            const err = new Error((r && r.error) || "encodeput failed");
+            err.name = (r && r.name) || "Error";
+            if (r && r.quota) err.name = "QuotaExceededError";
+            throw err;
+          }
+          faceScratchStats.blobsWritten++;
+          faceScratchStats.encodeMs += r.encodeMs || 0;
+          faceScratchStats.writeMs += r.writeMs || 0;
+          faceScratchStats.liveBytes += r.size || 0;
+          if (faceScratchStats.liveBytes > faceScratchStats.blobBytesPeak) faceScratchStats.blobBytesPeak = faceScratchStats.liveBytes;
+          return { ok: true, size: r.size, encodeMs: r.encodeMs, writeMs: r.writeMs };
+        }
+        let blob = await encodeScratchJpeg(canvas, FACE_SCRATCH_QUALITY);
+        const tw0 = performance.now();
+        const size = await faceScratchPut(key, blob);
+        blob = null;
+        faceScratchStats.blobsWritten++;
+        faceScratchStats.writeMs += performance.now() - tw0;
+        return { ok: true, size: size };
+      } catch (err) {
+        if (bmp && bmp.close) try { bmp.close(); } catch (_) {}
+        bmp = null;
+        if (isQuotaExceededError(err)) {
+          faceScratchStats.quotaFailures++;
+          faceScratchStats.quotaKeys.push(key);
+          return { ok: false, quota: true, error: String(err && err.message ? err.message : err) };
+        }
+        console.warn("faceScratch encode/put", err);
+        return { ok: false, error: String(err && err.message ? err.message : err) };
+      }
+    });
+  }
+
+  async function faceScratchDropAll() {
+    // Do not start the worker just to drop: if it was never created (判斷表情
+    // OFF, or first load), indexedDB.deleteDatabase is enough for leftovers.
+    if (faceScratchWorker) {
+      try { await faceScratchRpc({ op: "drop" }); }
+      catch (err) { console.warn("faceScratch drop", err); }
+      try { faceScratchWorker.terminate(); } catch (_) {}
+      faceScratchWorker = null;
+    }
+    // Close any leftover connections so deleteDatabase is not blocked and no empty
+    // scratch DB is left behind after cleanup / 重選照片 / startup.
+    try {
+      await Promise.race([
+        new Promise(function (resolve) {
+          const q = indexedDB.deleteDatabase("photo-cull-face-scratch-v1");
+          q.onsuccess = q.onerror = q.onblocked = function () { resolve(); };
+        }),
+        new Promise(function (resolve) { setTimeout(resolve, 1500); })
+      ]);
+    } catch (_) {}
+    faceScratchStats.liveBytes = 0;
+    faceScratchStats.blobBytesAfterCleanup = 0;
+  }
+
   function loadImageFromFile(file) {
     return new Promise(function (resolve, reject) {
       const url = URL.createObjectURL(file);
@@ -978,7 +1594,7 @@
       };
       const fail = function () {
         URL.revokeObjectURL(url);
-        reject(new Error(file.name));
+        reject(new Error(file.name||"image"));
       };
       img.onerror = fail;
       img.src = url;
@@ -994,11 +1610,11 @@
     });
   }
 
-  // v9e memory hotfix: all analysis decodes go through a sliding pool of
-  // DECODE_POOL_SIZE Images. One Image is reused per slot; the decoded frame
-  // is dropped (src="" / removeAttribute / no leftover caller ref) and the UI
-  // is yielded before the slot is reused. Same HTML Image + decode() →
-  // drawImage@ANALYZE_MAX path as v9d — do not introduce createImageBitmap resize.
+  // v9e memory hotfix: large-image (and all analysis) decode uses a sliding
+  // pool of DECODE_POOL_SIZE Images. One Image is reused per slot; the decoded
+  // frame is dropped (src="" / removeAttribute / no leftover caller ref) and
+  // the UI is yielded before the slot is reused. Same HTML Image + decode()
+  // → drawImage@ANALYZE_MAX path as v9d — do not introduce createImageBitmap resize.
   const DECODE_POOL_SIZE = 1;
   const _decodeFree = [];
   const _decodeWait = [];
@@ -1298,7 +1914,7 @@
         v: ANALYSIS_VERSION, sharp: p.sharp, mean: p.mean, overPct: p.overPct, underPct: p.underPct,
         grayStd: p.grayStd, edgeEnergy: p.edgeEnergy, flat: !!p.flat,
         hash: p.hash, aHash: p.aHash, thumbBlob: p.thumbBlob,
-        captureMs: p.captureMs, dateSource: p.dateSource, aspW: p.aspW || 0, aspH: p.aspH || 0,
+        captureMs: p.captureMs, dateSource: p.dateSource, aspW: p.aspW || 0, aspH: p.aspH || 0, faces: p.faces || [], faceScored: !!p.faceScored, faceError: p.faceError || null, faceInferenceMs: p.faceInferenceMs || 0,
       };
       analysis.displayBlob = p.displayBlob;
       if (!(analysis.aspW > 0) && p.aspW > 0) { analysis.aspW = p.aspW; analysis.aspH = p.aspH; }
@@ -1359,8 +1975,13 @@
     }
     markReselectPlaceholder(img);
   }
+  // v10o: main-thread metrics (判斷表情 OFF, 0 workers) reuse one gray / one scaled scratch buffer
+  // instead of allocating ~0.94MB of Float32Array per photo. Views are exact-length, values identical.
+  let metricGrayScratch = new Float32Array(0), metricScaledScratch = new Float32Array(0);
   function toGray(data) {
-    const g = new Float32Array(data.length / 4);
+    const n = data.length / 4;
+    if (metricGrayScratch.length < n) metricGrayScratch = new Float32Array(n);
+    const g = metricGrayScratch.length === n ? metricGrayScratch : metricGrayScratch.subarray(0, n);
     for (let i = 0, j = 0; i < data.length; i += 4, j++) {
       g[j] = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
     }
@@ -1372,7 +1993,8 @@
       const scale = 256 / Math.max(w, h);
       sw = Math.max(1, Math.round(w * scale));
       sh = Math.max(1, Math.round(h * scale));
-      const scaled = new Float32Array(sw * sh);
+      if (metricScaledScratch.length < sw * sh) metricScaledScratch = new Float32Array(sw * sh);
+      const scaled = metricScaledScratch.length === sw * sh ? metricScaledScratch : metricScaledScratch.subarray(0, sw * sh);
       for (let y = 0; y < sh; y++) {
         for (let x = 0; x < sw; x++) {
           scaled[y * sw + x] = gray[Math.min(h - 1, Math.floor(y / scale)) * w + Math.min(w - 1, Math.floor(x / scale))];
@@ -1441,6 +2063,44 @@
   function hashDistance(a, b) {
     return Math.min(hamming(a.hash, b.hash), hamming(a.aHash, b.aHash));
   }
+  // Same sampling as the metric worker (not the canvas dHash/aHash helpers).
+  // Used when 判斷表情 is OFF so hashes stay identical without starting a Worker.
+  function dHashFromGray(gray, w, h) {
+    const bits = [];
+    for (let row = 0; row < 8; row++) for (let col = 0; col < 8; col++) {
+      const x1 = Math.floor((col / 9) * w), x2 = Math.floor(((col + 1) / 9) * w), y = Math.floor((row / 8) * h);
+      const g1 = gray[y * w + Math.min(w - 1, x1)], g2 = gray[y * w + Math.min(w - 1, x2)];
+      bits.push(g1 < g2 ? "1" : "0");
+    }
+    return bits.join("");
+  }
+  function aHashFromGray(gray, w, h) {
+    const cells = []; let sum = 0;
+    for (let row = 0; row < 8; row++) for (let col = 0; col < 8; col++) {
+      const x0 = Math.floor((col / 8) * w), x1 = Math.floor(((col + 1) / 8) * w);
+      const y0 = Math.floor((row / 8) * h), y1 = Math.floor(((row + 1) / 8) * h);
+      let s = 0, c = 0;
+      for (let y = y0; y < Math.max(y0 + 1, y1); y++) for (let x = x0; x < Math.max(x0 + 1, x1); x++) {
+        s += gray[Math.min(h - 1, y) * w + Math.min(w - 1, x)]; c++;
+      }
+      const v = s / c; cells.push(v); sum += v;
+    }
+    const avg = sum / 64;
+    return cells.map(function (v) { return v >= avg ? "1" : "0"; }).join("");
+  }
+  function metricsOnMain(imageData, w, h) {
+    const gray = toGray(imageData.data);
+    const sharp = laplacianVariance(gray, w, h);
+    const exp = exposureStats(gray);
+    return {
+      sharp: sharp, mean: exp.mean, std: exp.std, edgeEnergy: Math.sqrt(Math.max(0, sharp)),
+      overPct: exp.overPct, underPct: exp.underPct,
+      hash: dHashFromGray(gray, w, h), aHash: aHashFromGray(gray, w, h)
+    };
+  }
+  // Pool workers (metric, encode, face-scratch) start lazily, and only while
+  // this run is in 判斷表情 ON (runFaceMode). OFF runs must construct 0 Workers.
+  function allowPoolWorkers() { return !!runFaceMode; }
   function qualityScore(p) {
     return p.sharp - Math.abs(p.mean - 120) * 0.5 - p.overPct - p.underPct * 0.5;
   }
@@ -1505,6 +2165,7 @@
   let metricWorker = null, workerReqId = 0;
   const workerWaiters = {};
   function getMetricWorker() {
+    if (!allowPoolWorkers()) return null;
     if (metricWorker) return metricWorker;
     try {
       const url = URL.createObjectURL(new Blob([workerCode], { type: "text/javascript" }));
@@ -1547,6 +2208,7 @@
   const encodeWaiters = {};
   const ENCODE_POOL = 6;
   function ensureEncodeWorkers() {
+    if (!allowPoolWorkers()) return null;
     if (encodeWorkers && encodeWorkers.length) return encodeWorkers;
     try {
       if (typeof OffscreenCanvas !== "function") return null;
@@ -1574,9 +2236,23 @@
     encodeRr++;
     return pick;
   }
+  function jpegOnMainFromBlob(blob, quality, maxSide) {
+    // v9e path: one reused Image via withDecodedImage; drop the decoded
+    // frame before JPEG encode so this display path never holds an extra frame.
+    const canvas = acquireCanvas();
+    return withDecodedImage(blob, function (img) {
+      const ctx = canvas.getContext("2d", { alpha: false });
+      drawOnto(canvas, ctx, img, maxSide || DISPLAY_MAX);
+    }).then(function () {
+      return canvasToJpegBlob(canvas, quality);
+    }).catch(function () { return null; }).then(function (out) {
+      releaseCanvas(canvas);
+      return out;
+    });
+  }
   function jpegViaWorkerFromBlob(blob, quality, maxSide) {
-    const worker = getEncodeWorkerRoundRobin();
-    if (!worker) return Promise.resolve(null);
+    const worker = allowPoolWorkers() ? getEncodeWorkerRoundRobin() : null;
+    if (!worker) return jpegOnMainFromBlob(blob, quality, maxSide);
     const id = ++encodeReqId;
     return new Promise(function (resolve) {
       encodeWaiters[id] = resolve;
@@ -1590,8 +2266,28 @@
   }
 
 
+  function jpegViaWorkerFromBitmap(bmp, quality) {
+    const worker = allowPoolWorkers() ? (typeof getEncodeWorkerRoundRobin === "function" ? getEncodeWorkerRoundRobin() : getEncodeWorker()) : null;
+    if (!worker || !bmp) {
+      try { if (bmp && bmp.close) bmp.close(); } catch (_) {}
+      return Promise.resolve(null);
+    }
+    const id = ++encodeReqId;
+    return new Promise(function (resolve) {
+      encodeWaiters[id] = function (data) {
+        resolve(data && typeof data === "object" && "blob" in data ? data.blob : data);
+      };
+      try {
+        worker.postMessage({ id: id, bitmap: bmp, quality: quality }, [bmp]);
+      } catch (err) {
+        delete encodeWaiters[id];
+        try { if (bmp.close) bmp.close(); } catch (_) {}
+        resolve(null);
+      }
+    });
+  }
   function jpegViaWorkerFromCanvas(canvas, quality) {
-    const worker = (typeof getEncodeWorkerRoundRobin === "function" ? getEncodeWorkerRoundRobin() : getEncodeWorker());
+    const worker = allowPoolWorkers() ? (typeof getEncodeWorkerRoundRobin === "function" ? getEncodeWorkerRoundRobin() : getEncodeWorker()) : null;
     if (!worker || typeof createImageBitmap !== "function") {
       return canvasToJpegBlob(canvas, quality);
     }
@@ -1612,13 +2308,9 @@
   }
 
   function metricsViaWorker(imageData, w, h) {
-    const worker = getMetricWorker();
+    const worker = allowPoolWorkers() ? getMetricWorker() : null;
     if (!worker) {
-      const gray = toGray(imageData.data);
-      const sharp = laplacianVariance(gray, w, h);
-      return Promise.resolve({
-        sharp: sharp, ...exposureStats(gray), edgeEnergy: Math.sqrt(Math.max(0, sharp)), hash: null, aHash: null
-      });
+      return Promise.resolve(metricsOnMain(imageData, w, h));
     }
     const id = ++workerReqId;
     return new Promise(function (resolve) {
@@ -1637,8 +2329,14 @@
     if (!saved || !saved.analysis) return false;
     const a = saved.analysis;
     // v9 only — rejects v≤8 so stale v7/v8 labels/display shapes are never reused
-    if (!a || a.v !== ANALYSIS_VERSION || typeof a.sharp !== "number" || !a.hash) return false;
-    if (!a.thumbBlob) return false;
+    if (!a || (a.v !== ANALYSIS_VERSION && !(a.v === 9 && !runFaceMode)) || typeof a.sharp !== "number" || !a.hash) return false;
+    if (!a.thumbBlob || a.faceError || (runFaceMode && !Array.isArray(a.faces))) return false;
+    // v11: faceScored=false is valid (singleton / non-candidate). Do not reject it.
+    // v10d compact faces lack the deciding fun channel: rescore once, preserving manual choice.
+    // Older full-score caches can recover the channel without another inference.
+    if(runFaceMode && a.faces.some(f=>!validFunKind(f.funKind) && !f.scores)) return false;
+    if (runFaceMode && FACE_DEBUG && a.faces.some(f=>!Array.isArray(f.box))) return false;
+    item._faceModeChanged=a.faceScored !== runFaceMode;
     item.sharp = a.sharp; item.mean = a.mean; item.overPct = a.overPct; item.underPct = a.underPct;
     item.grayStd = typeof a.grayStd === "number" ? a.grayStd : 0;
     item.edgeEnergy = typeof a.edgeEnergy === "number" ? a.edgeEnergy : Math.sqrt(Math.max(0, item.sharp));
@@ -1650,6 +2348,7 @@
     item.captureMs = typeof a.captureMs === "number" ? a.captureMs : item.lastModified;
     item.dateSource = a.dateSource === "exif" ? "exif" : "file";
     item.aspW = a.aspW || 0; item.aspH = a.aspH || 0;
+    item.faces = runFaceMode ? (a.faces || []).map(compactFace) : []; item.faceInferenceMs = runFaceMode ? (a.faceInferenceMs || 0) : 0; item.faceScored=runFaceMode && !!a.faceScored;
     item.analyzed = true; item.fromCache = true;
     return true;
   }
@@ -1679,7 +2378,7 @@
           function readIFD(ifd) {
             if (ifd < 0 || ifd + 2 >= u8.length) return null;
             const n = rd16(ifd);
-            let dateStr = null;
+            let dto = null, dt = null;
             let exifOff = null;
             for (let i = 0; i < n; i++) {
               const e = ifd + 2 + i * 12;
@@ -1694,17 +2393,18 @@
               if (tag === 0x9003 || tag === 0x0132) {
                 let s = "";
                 for (let k = 0; k < Math.min(cnt - 1, 19); k++) s += String.fromCharCode(u8[dataAt + k]);
-                if (/^\d{4}:\d{2}:\d{2} \d{2}:\d{2}:\d{2}$/.test(s)) dateStr = s;
+                if (/^\d{4}:\d{2}:\d{2} \d{2}:\d{2}:\d{2}$/.test(s)) {
+                  if (tag === 0x9003) dto = s; else dt = s;
+                }
               }
             }
-            return { dateStr: dateStr, exifOff: exifOff };
+            return { dto: dto, dt: dt, exifOff: exifOff };
           }
+          // v10p: DateTimeOriginal (0x9003, IFD0 or Exif sub-IFD) first; DateTime (0x0132) only
+          // when no DateTimeOriginal exists (DateTime can be the edit time on edited photos).
           const ifd0res = readIFD(ifd0);
-          let dateStr = ifd0res && ifd0res.dateStr;
-          if (!dateStr && ifd0res && ifd0res.exifOff) {
-            const sub = readIFD(ifd0res.exifOff);
-            if (sub && sub.dateStr) dateStr = sub.dateStr;
-          }
+          const sub = ifd0res && ifd0res.exifOff ? readIFD(ifd0res.exifOff) : null;
+          const dateStr = (ifd0res && ifd0res.dto) || (sub && sub.dto) || (ifd0res && ifd0res.dt) || (sub && sub.dt) || null;
           if (dateStr) {
             const parts = dateStr.split(/[: ]/);
             const iso = parts[0] + "-" + parts[1] + "-" + parts[2] + "T" + parts[3] + ":" + parts[4] + ":" + parts[5];
@@ -1772,36 +2472,428 @@
     ctx.drawImage(img, 0, 0, w, h);
     return { w: w, h: h };
   }
+  // v10: only this existing 512 canvas is fed to Face Landmarker; no image redecode.
+  const faceRuntimeStats = { version: "0.10.21", loadMs: 0, calls: 0, times: [], timeSum: 0, timeMin: null, timeMax: null, errors: [] };
+  let faceTaskPromise, readyFaceTask = null, runFaceMode = false;
+  const FACE_DEBUG = new URLSearchParams(location.search).get("debug") === "face";
+  // One existing 512px analysis canvas in face mode, never another decode/copy.
+  // Face critical sections never await: draw/read/detect finish before the next job.
+  // At most three file/metric/JPEG jobs overlap; they retain snapshots, not this canvas.
+  const faceAnalysisCanvas = document.createElement("canvas");
+  let faceGrayScratch = new Uint8Array(0);
+  // Face sharpness owns only its integer ROI, never a full analysis-canvas readback.
+  const faceCropCanvas = document.createElement("canvas");
+  const faceCropCtx = faceCropCanvas.getContext("2d", {willReadFrequently:true,alpha:false});
+  function croppedFaceSharpness(canvas,px,py,cw,ch) {
+    let pixels=null;
+    try {
+      faceCropCanvas.width=cw; faceCropCanvas.height=ch;
+      faceCropCtx.drawImage(canvas,px,py,cw,ch,0,0,cw,ch);
+      pixels=faceCropCtx.getImageData(0,0,cw,ch);
+      return faceLaplacian(pixels.data,cw,ch);
+    } finally {
+      pixels=null;
+      faceCropCanvas.width=1; faceCropCanvas.height=1;
+    }
+  }
+  function validFunKind(kind) {
+    return kind === "jawOpen" || kind === "mouthPucker" || kind === "browInnerUp";
+  }
+  function funKindFromScores(scores) {
+    const jaw=scores.jawOpen||0,pucker=scores.mouthPucker||0,brow=scores.browInnerUp||0;
+    return jaw>=pucker && jaw>=brow ? "jawOpen" : pucker>=brow ? "mouthPucker" : "browInnerUp";
+  }
+  function funKeyword(kind) {
+    return kind === "mouthPucker" ? "嘟嘴" : kind === "browInnerUp" ? "挑眉" : "大笑";
+  }
+  function compactFace(f) {
+    const scores=f.scores||{};
+    const out={area:f.area,sharp:f.sharp,expression:f.expression,blink:f.blink,failed:f.failed,
+      smile:f.smile??Math.max(scores.mouthSmileLeft||0,scores.mouthSmileRight||0),
+      fun:f.fun??Math.max(scores.jawOpen||0,scores.mouthPucker||0,scores.browInnerUp||0),
+      funKind:validFunKind(f.funKind)?f.funKind:funKindFromScores(scores)};
+    if(FACE_DEBUG && f.box) out.box=f.box;
+    return out;
+  }
+  faceRuntimeStats.ready = false;
+  let faceReadyAppliesThisRun = false;
+  function showFaceReadyToast(msg) {
+    // Do not show "下次整理會套用" when this analysis waited for the model and will apply it now.
+    if (!msg && faceReadyAppliesThisRun) return;
+    const toast=document.getElementById("faceReadyToast");
+    if(msg) toast.textContent=msg;
+    else if(!toast.textContent || toast.dataset.defaultMsg) toast.textContent=toast.dataset.defaultMsg||"臉部判斷已就緒，下次整理會套用";
+    const footer=document.querySelector(".footer");
+    function position() {
+      const rect=footer?.getBoundingClientRect();
+      const bottom=rect && rect.height && !footer.classList.contains("hidden") ? Math.max(0,innerHeight-rect.top)+12 : 20;
+      toast.style.bottom=bottom+"px";
+    }
+    position();
+    const observer=new ResizeObserver(position); if(footer) observer.observe(footer);
+    window.addEventListener("resize",position);
+    toast.classList.remove("hidden","leaving");
+    clearTimeout(showFaceReadyToast.timer);
+    showFaceReadyToast.timer=setTimeout(function(){
+      if(matchMedia("(prefers-reduced-motion: reduce)").matches) toast.classList.add("hidden");
+      else { toast.classList.add("leaving"); setTimeout(()=>toast.classList.add("hidden"),180); }
+      observer.disconnect(); window.removeEventListener("resize",position);
+    },4000);
+  }
+  async function faceAssetController() {
+    if (!("serviceWorker" in navigator)) throw new Error("Offline face assets require HTTPS or localhost service workers");
+    const expected=new URL("./sw.v10q.js",location.href).href;
+    if(navigator.serviceWorker.controller?.scriptURL !== expected) await navigator.serviceWorker.register("./sw.v10q.js");
+    if (navigator.serviceWorker.controller?.scriptURL !== expected) await new Promise(resolve=>{
+      function ready(){if(navigator.serviceWorker.controller?.scriptURL===expected){navigator.serviceWorker.removeEventListener("controllerchange",ready);resolve();}}
+      navigator.serviceWorker.addEventListener("controllerchange",ready); ready();
+    });
+    return navigator.serviceWorker.controller;
+  }
+  function precacheFaceVariant(controller,simd) {
+    return new Promise((resolve,reject)=>{
+      const channel=new MessageChannel();
+      channel.port1.onmessage=e=>{channel.port1.close();e.data.ok?resolve():reject(new Error(e.data.error));};
+      controller.postMessage({type:"v10q-face-assets",simd},[channel.port2]);
+    });
+  }
+  const FACE_MODEL_URL = "./vendor/v10/face_landmarker.task";
+  // Fallback sizes (bytes) when the response has no Content-Length. Used only for the progress label.
+  const FACE_ASSET_BYTES = {
+    "./vendor/v10/face_landmarker.task": 3758596,
+    "./vendor/v10/tasks-vision/wasm/vision_wasm_internal.js": 204284,
+    "./vendor/v10/tasks-vision/wasm/vision_wasm_internal.wasm": 9574032,
+    "./vendor/v10/tasks-vision/wasm/vision_wasm_nosimd_internal.js": 204137,
+    "./vendor/v10/tasks-vision/wasm/vision_wasm_nosimd_internal.wasm": 9448638
+  };
+  let modelWaitActive = false;
+  function formatMb(bytes) {
+    return (Math.round(bytes / 1048576 * 10) / 10).toFixed(1);
+  }
+  function updateModelDownloadProgress(received, total) {
+    if (!modelWaitActive) return;
+    const track = el.progressTrack || (el.progressBar && el.progressBar.parentElement);
+    if (total > 0) {
+      if (track) track.classList.remove("indet");
+      if (el.progressBar) el.progressBar.style.width = Math.min(100, Math.round(received / total * 100)) + "%";
+      if (el.progressText) el.progressText.textContent = "準備表情模型中… " + formatMb(received) + " / " + formatMb(total) + " MB";
+    } else {
+      if (track) track.classList.add("indet");
+      if (el.progressBar) el.progressBar.style.width = "36%";
+      if (el.progressText) el.progressText.textContent = "準備表情模型中…";
+    }
+  }
+  async function fetchBodyWithProgress(url, onChunk, keep) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Asset fetch " + res.status + " " + url);
+    const declared = Number(res.headers.get("Content-Length") || 0);
+    if (!res.body || !res.body.getReader) {
+      const buf = new Uint8Array(await res.arrayBuffer());
+      onChunk(buf.byteLength, declared || buf.byteLength);
+      return keep ? buf : null;
+    }
+    const reader = res.body.getReader();
+    const chunks = keep ? [] : null;
+    let received = 0, lastYield = 0;
+    for (;;) {
+      const step = await reader.read();
+      if (step.done) break;
+      if (chunks) chunks.push(step.value);
+      received += step.value.byteLength;
+      onChunk(received, declared);
+      const now = typeof performance !== "undefined" ? performance.now() : 0;
+      if (now - lastYield > 80) { lastYield = now; await yieldToUI(); }
+    }
+    if (!keep) return null;
+    const buf = new Uint8Array(received);
+    let off = 0;
+    for (let i = 0; i < chunks.length; i++) { buf.set(chunks[i], off); off += chunks[i].byteLength; }
+    return buf;
+  }
+  async function loadFaceAssetsWithProgress(modelUrl, otherUrls) {
+    const parts = [{ url: modelUrl, keep: true }].concat(otherUrls.map(function (u) { return { url: u, keep: false }; }));
+    const rec = parts.map(function () { return 0; });
+    const tot = parts.map(function (p) { return FACE_ASSET_BYTES[p.url] || 0; });
+    const known = parts.map(function (p) { return tot[parts.indexOf(p)] > 0; });
+    // tot/known initialized from fallback map; Content-Length overrides when present.
+    for (let i = 0; i < parts.length; i++) known[i] = tot[i] > 0;
+    function emit() {
+      let r = 0, t = 0, allKnown = true;
+      for (let i = 0; i < parts.length; i++) {
+        r += rec[i];
+        if (known[i]) t += tot[i];
+        else allKnown = false;
+      }
+      updateModelDownloadProgress(r, allKnown ? t : 0);
+    }
+    emit();
+    const bufs = await Promise.all(parts.map(function (p, i) {
+      return fetchBodyWithProgress(p.url, function (got, declared) {
+        rec[i] = got;
+        if (declared > 0) { tot[i] = declared; known[i] = true; }
+        emit();
+      }, p.keep).then(function (buf) {
+        if (buf) rec[i] = buf.byteLength;
+        if (!known[i] && rec[i]) { tot[i] = rec[i]; known[i] = true; }
+        emit();
+        return buf;
+      });
+    }));
+    return bufs[0];
+  }
+  function getFaceTask() {
+    if (!faceTaskPromise) faceTaskPromise = (async function () {
+      if (window.__PHOTO_CULL_HOLD_FACE) {
+        await new Promise(function (res, rej) {
+          window.__photoCullHold = { release: res, fail: rej };
+        });
+      }
+      const start = performance.now();
+      const controller=await faceAssetController();
+      const mp = await import("./vendor/v10/tasks-vision/vision_bundle.mjs");
+      // Exactly one capability probe, then explicit paths (no second resolver probe).
+      const supported=await mp.FilesetResolver.isSimdSupported();
+      const simd=new URLSearchParams(location.search).get("faceWasm") === "nosimd" ? false : supported;
+      faceRuntimeStats.variant=simd?"simd":"nosimd";
+      const name=simd?"vision_wasm_internal":"vision_wasm_nosimd_internal";
+      const wasmJs="./vendor/v10/tasks-vision/wasm/"+name+".js";
+      const wasmBin="./vendor/v10/tasks-vision/wasm/"+name+".wasm";
+      // Stream the model (keep the buffer for MediaPipe) and the wasm files (count only;
+      // the service worker caches them). Progress is shown only while the wait UI is up.
+      const modelBuf = await loadFaceAssetsWithProgress(FACE_MODEL_URL, [wasmJs, wasmBin]);
+      await precacheFaceVariant(controller,simd);
+      const fs={wasmLoaderPath:wasmJs,wasmBinaryPath:wasmBin};
+      const task = await mp.FaceLandmarker.createFromOptions(fs, {
+        baseOptions: { modelAssetBuffer: modelBuf, delegate: "CPU" },
+        runningMode: "IMAGE", numFaces: 5, outputFaceBlendshapes: true
+      });
+      faceRuntimeStats.loadMs = performance.now() - start;
+      readyFaceTask=task; faceRuntimeStats.ready=true;
+      showFaceReadyToast(); // Never recompute, render, mutate choices or touch scroll here.
+      return task;
+    })();
+    return faceTaskPromise;
+  }
+  function faceLaplacian(data, cw, ch) {
+    const n=cw*ch;
+    if(faceGrayScratch.length<n) faceGrayScratch=new Uint8Array(n);
+    const g=faceGrayScratch;
+    for (let y=0; y<ch; y++) for (let x=0; x<cw; x++) {
+      const i=(y*cw+x)*4;
+      g[y*cw+x]=Math.round(.299*data[i]+.587*data[i+1]+.114*data[i+2]);
+    }
+    let sum=0, sq=0;
+    // Identical reflect101 borders and native-resolution 4-neighbour Laplacian.
+    for (let y=0; y<ch; y++) for (let x=0; x<cw; x++) {
+      const l=cw===1?0:(x===0?1:x-1), r=cw===1?0:(x===cw-1?cw-2:x+1);
+      const t=ch===1?0:(y===0?1:y-1), b=ch===1?0:(y===ch-1?ch-2:y+1);
+      const v=-4*g[y*cw+x]+g[y*cw+l]+g[y*cw+r]+g[t*cw+x]+g[b*cw+x];
+      sum+=v; sq+=v*v;
+    }
+    return sq/n-(sum/n)*(sum/n);
+  }
+  function releaseDetectResult(result) {
+    // Free MediaPipe WASM outputs for THIS photo immediately; do not wait for the group.
+    if (!result) return;
+    function drop(obj) {
+      if (!obj) return;
+      if (typeof obj.close === "function") { try { obj.close(); } catch (_) {} }
+      if (Array.isArray(obj)) {
+        for (let i = 0; i < obj.length; i++) drop(obj[i]);
+        obj.length = 0;
+      }
+    }
+    try {
+      drop(result.faceLandmarks);
+      drop(result.faceBlendshapes);
+      drop(result.facialTransformationMatrixes);
+      if (typeof result.close === "function") try { result.close(); } catch (_) {}
+    } catch (_) {}
+  }
+  function analyzeFaces(item, canvas) {
+    // Three file jobs remain; synchronous detect/read sections cannot overlap in JS.
+    let result=null;
+    try {
+      const task=readyFaceTask;
+      if(!task || !runFaceMode) throw new Error("Face task not ready for this run");
+      const start=performance.now();
+      result=task.detect(canvas);
+      item.faceInferenceMs=performance.now()-start;
+      faceRuntimeStats.calls++;
+      const _ft = item.faceInferenceMs;
+      faceRuntimeStats.timeSum = (faceRuntimeStats.timeSum || 0) + _ft;
+      if (faceRuntimeStats.timeMin == null || _ft < faceRuntimeStats.timeMin) faceRuntimeStats.timeMin = _ft;
+      if (faceRuntimeStats.timeMax == null || _ft > faceRuntimeStats.timeMax) faceRuntimeStats.timeMax = _ft;
+      // Do not retain the per-photo ms array — it grew through pass-2 for no product benefit.
+      item.faces=[];
+      const landmarks=result.faceLandmarks||[];
+      const blendshapes=result.faceBlendshapes||[];
+      for(let i=0;i<landmarks.length;i++) {
+        let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+        for(const p of landmarks[i]) {x0=Math.min(x0,p.x);y0=Math.min(y0,p.y);x1=Math.max(x1,p.x);y1=Math.max(y1,p.y);}
+        const box=[Math.max(0,x0),Math.max(0,y0),Math.min(1,x1),Math.min(1,y1)];
+        const area=(box[2]-box[0])*(box[3]-box[1]);
+        let smile=0,jawOpen=0,mouthPucker=0,browInnerUp=0,blink=0;
+        for(const c of (blendshapes[i]&&blendshapes[i].categories)||[]) {
+          if(c.categoryName==='mouthSmileLeft'||c.categoryName==='mouthSmileRight')smile=Math.max(smile,c.score);
+          else if(c.categoryName==='jawOpen')jawOpen=c.score;
+          else if(c.categoryName==='mouthPucker')mouthPucker=c.score;
+          else if(c.categoryName==='browInnerUp')browInnerUp=c.score;
+          else if(c.categoryName==='eyeBlinkLeft'||c.categoryName==='eyeBlinkRight')blink=Math.max(blink,c.score);
+        }
+        const fun=Math.max(jawOpen,mouthPucker,browInnerUp);
+        const funKind=funKindFromScores({jawOpen,mouthPucker,browInnerUp});
+        const expression=Math.max(smile,fun);
+        const px=Math.floor(box[0]*canvas.width),py=Math.floor(box[1]*canvas.height);
+        const cw=Math.max(1,Math.floor(box[2]*canvas.width)-px),ch=Math.max(1,Math.floor(box[3]*canvas.height)-py);
+        // One-to-one integer ROI copy preserves E's exact sharpness values.
+        const sharp=croppedFaceSharpness(canvas,px,py,cw,ch);
+        const face={area,sharp,smile,fun,funKind,expression,blink,failed:blink>=.5 && expression<.3};
+        if(FACE_DEBUG)face.box=box;
+        item.faces.push(face);
+      }
+      item.faceError=null;
+    } catch(err) {
+      item.faces=[];item.faceError=String(err);if((faceRuntimeStats.errors||[]).length<8)faceRuntimeStats.errors.push(item.name+": "+err);
+      el.progressText.textContent="臉部分析無法載入，暫用原有分析";
+      console.warn("v10 face analysis failed",err);
+    } finally {
+      // Drop landmark / blendshape / matrix buffers now — not after the group finishes.
+      releaseDetectResult(result);
+      result=null;
+    }
+  }
+  function rankFaceGroup(g) {
+    const enabled=g.some(p=>(p.faces||[]).some(f=>f.area>=.03));
+    g.forEach(function(p) {
+      p.faceRules=enabled;
+      p.mainFaceCount=(p.faces||[]).filter(f=>f.area>=.03).length;
+      // In an enabled burst, retain the detected track on members just below 3%.
+      const main=(p.faces||[]).filter(f=>f.area>=.03);
+      const selected=enabled?(main.length?main:(p.faces||[])):[];
+      p.faceSharp=selected.length?Math.min(...selected.map(f=>f.sharp)):null;
+      p.faceFailed=selected.some(f=>f.failed);
+      p.faceExpression=selected.length?Math.max(...selected.map(f=>f.expression)):0;
+    });
+    if (!enabled || g.length<2) { g.sort((a,b)=>qualityScore(b)-qualityScore(a)); return; }
+    const withFaces=g.filter(p=>p.faces?.length);
+    const maxSharp=Math.max(...withFaces.map(p=>p.faceSharp));
+    // Fixed group-max anchor prevents non-transitive 15%-tolerance comparison cycles.
+    g.forEach(p=>{p.faceTiePool=!!p.faces?.length && p.faceSharp>=maxSharp*.85;});
+    g.sort(function(a,b) {
+      const presence=Number(!!b.faces?.length)-Number(!!a.faces?.length);
+      if (presence) return presence;
+      if (!a.faces?.length) return qualityScore(b)-qualityScore(a);
+      if (a.faceTiePool!==b.faceTiePool) return Number(b.faceTiePool)-Number(a.faceTiePool);
+      if (!a.faceTiePool && a.faceSharp!==b.faceSharp) return b.faceSharp-a.faceSharp;
+      return Number(a.faceFailed)-Number(b.faceFailed) || b.faceExpression-a.faceExpression || qualityScore(b)-qualityScore(a);
+    });
+  }
+  // Presentation only: explain the existing winner vs its highest-ranked competitor.
+  // Never alter the comparator, eligibility, quality metrics or keep/delete decisions.
+  function describeFaceWinner(g) {
+    g.forEach(p=>{p.faceWinLabel="";p.faceDecisive="";p.faceLossReason="";});
+    if(g.length<2 || !g[0].faceRules) return;
+    const winner=g[0],runner=g[1];
+    // Explain each loser against the winner using the actual first sorting gate.
+    // A loser outside the sharpness tie pool lost on clarity, even if also blinking.
+    g.slice(1).forEach(p=>{
+      p.faceLossReason=winner.faces?.length && p.faces?.length && winner.faceTiePool && p.faceTiePool
+        ? "同組有表情較好的一張" : "同組有臉部較清楚的一張";
+    });
+    winner.faceDecisive="sharpness";
+    winner.faceWinLabel="同組臉部較清楚";
+    if(!winner.faces?.length || !runner.faces?.length || !winner.faceTiePool || !runner.faceTiePool) return;
+    if(winner.faceFailed!==runner.faceFailed) {
+      winner.faceDecisive="blink";winner.faceWinLabel="表情較好：睜眼";return;
+    }
+    if(winner.faceExpression!==runner.faceExpression) {
+      const main=winner.faces.filter(f=>f.area>=.03), selected=main.length?main:winner.faces;
+      const smile=Math.max(...selected.map(f=>f.smile||0));
+      const fun=Math.max(...selected.map(f=>f.fun||0));
+      winner.faceDecisive=fun>smile?"fun":"smile";
+      const funFace=selected.reduce((a,b)=>a.fun>=b.fun?a:b);
+      winner.faceWinLabel=fun>smile?"表情有趣："+funKeyword(funFace.funKind):"表情較好：微笑";return;
+    }
+    winner.faceDecisive="quality";winner.faceWinLabel="同組整體品質較好";
+  }
+  function reasonHtml(p, text, viewer) {
+    const plain=text===undefined?(p.reason||""):text;
+    const match=/^(表情較好|表情有趣)：(睜眼|微笑|大笑|嘟嘴|挑眉)$/.exec(plain);
+    let html=match?escapeHtml(match[1])+"：<strong class=\"face-keyword\">"+escapeHtml(match[2])+"</strong>":escapeHtml(plain);
+    if(p.faceScored && p.faceFailed) html+=viewer ? '<span class="viewer-blink-warning">・可能閉眼</span>' : '<span class="blink-warning">可能閉眼</span>';
+    return html;
+  }
+  function faceDebugHtml(p) {
+    if (new URLSearchParams(location.search).get("debug")!=="face") return "";
+    const r=cardRatio(p), ar=(p.aspW||4)/(p.aspH||3);
+    const iw=ar<r?ar/r:1, ih=ar>r?r/ar:1;
+    return (p.faces||[]).map(f=>'<i aria-hidden="true" class="face-debug" style="left:'+((1-iw)/2+f.box[0]*iw)*100+'%;top:'+((1-ih)/2+f.box[1]*ih)*100+'%;width:'+(f.box[2]-f.box[0])*iw*100+'%;height:'+(f.box[3]-f.box[1])*ih*100+'%"></i>').join("");
+  }
+  recoverInterruptedAnalysis();
+  if (faceExprPref) {
+    getFaceTask().catch(err=>{faceRuntimeStats.errors.push(String(err));console.warn("Background face model unavailable",err);});
+  }
+
   async function analyzeOne(item) {
     /**
      * ANALYSIS DECODE — DO NOT REPLACE with createImageBitmap (or any other resize decoder).
      * createImageBitmap(file) then drawImage-to-512 changes perceptual hashes by ~18–35 bits vs
      * v5's HTML Image → canvas@512 path, which caused ~388 keep/delete label flips in v6/v7.
-     * Always: loadImageFromFile (HTML Image + img.decode) → drawImage at ANALYZE_MAX (512).
+     * Always: withDecodedImage (one pooled HTML Image + img.decode) → drawImage at ANALYZE_MAX (512).
      * v8d: cold path encodes ONLY the 256 finish thumb from this canvas. Result-card 720 JPEGs
      * are produced lazily near the viewport (never feed hashes).
      */
     const capP = readCaptureDate(item.file);
-    const analyzeCanvas = acquireCanvas();
+    let img = null;
+    // Yield BEFORE the shared canvas critical section, never inside it.
+    if(runFaceMode) await yieldToUI();
+    const analyzeCanvas = runFaceMode ? faceAnalysisCanvas : acquireCanvas();
     const analyzeCtx = analyzeCanvas.getContext("2d", { willReadFrequently: true, alpha: false });
     try {
-      const analyzed = await decodeAndDraw(item.file, analyzeCanvas, analyzeCtx, ANALYZE_MAX);
+      // getImageData / thumb / face-scratch copy / shrink MUST run inside
+      // withDecodedImage's callback: its finally yields after fn() returns,
+      // and a sibling job's finally can wipe faceAnalysisCanvas during that yield.
+      let imageData = null, thumbCanvas = null, thumbP = null, faceScratchCanvas = null;
+      const analyzed = await withDecodedImage(item.file, function (decoded) {
+        const a = drawOnto(analyzeCanvas, analyzeCtx, decoded, ANALYZE_MAX);
+        imageData = analyzeCtx.getImageData(0, 0, a.w, a.h);
+        const tScale = Math.min(1, THUMB_MAX / Math.max(a.w, a.h));
+        const tw = Math.max(1, Math.round(a.w * tScale));
+        const th = Math.max(1, Math.round(a.h * tScale));
+        thumbCanvas = acquireCanvas();
+        thumbCanvas.width = tw; thumbCanvas.height = th;
+        thumbCanvas.getContext("2d", { alpha: false }).drawImage(analyzeCanvas, 0, 0, tw, th);
+        thumbP = canvasToJpegBlob(thumbCanvas, 0.55);
+        if (runFaceMode) {
+          faceScratchCanvas = acquireCanvas();
+          faceScratchCanvas.width = a.w;
+          faceScratchCanvas.height = a.h;
+          faceScratchCanvas.getContext("2d", { alpha: false }).drawImage(analyzeCanvas, 0, 0);
+          analyzeCanvas.width = 1; analyzeCanvas.height = 1;
+        }
+        return a;
+      });
       item.aspW = analyzed.w; item.aspH = analyzed.h; // v9c: card frame ratio (display only)
+      let metricsP = metricsViaWorker(imageData, analyzed.w, analyzed.h);
+      imageData=null; // transferred/fallback metric input no longer retained by this async frame
+
+      // Pass 1 never runs the face model; candidates are inferred after grouping.
+      item.faces=[]; item.faceInferenceMs=0; item.faceError=null;
+      item.faceScored=false;
       const cap = await capP;
       item.captureMs = cap.ms;
       item.dateSource = cap.source;
-      const imageData = analyzeCtx.getImageData(0, 0, analyzed.w, analyzed.h);
-      const metricsP = metricsViaWorker(imageData, analyzed.w, analyzed.h);
-
-      const tScale = Math.min(1, THUMB_MAX / Math.max(analyzed.w, analyzed.h));
-      const tw = Math.max(1, Math.round(analyzed.w * tScale));
-      const th = Math.max(1, Math.round(analyzed.h * tScale));
-      const thumbCanvas = acquireCanvas();
-      thumbCanvas.width = tw; thumbCanvas.height = th;
-      thumbCanvas.getContext("2d", { alpha: false }).drawImage(analyzeCanvas, 0, 0, tw, th);
-      const thumbP = canvasToJpegBlob(thumbCanvas, 0.55);
-
-      const metrics = await metricsP;
+      if (faceScratchCanvas) {
+        // v10j2: serialize encode+put (single worker, one at a time). Wait for
+        // transaction complete; drop the bitmap/JPEG before the next photo encodes.
+        // QuotaExceededError or any write failure: pass 2 falls back to the original.
+        try {
+          await faceScratchEncodePutFromCanvas(item.id, faceScratchCanvas);
+        } catch (err) { console.warn("faceScratch encodeput", err); }
+        releaseCanvas(faceScratchCanvas); faceScratchCanvas = null;
+      }
+      let metrics = await metricsP; metricsP=null;
       item.sharp = metrics.sharp; item.mean = metrics.mean;
       item.grayStd = typeof metrics.std === "number" ? metrics.std : 0;
       item.edgeEnergy = typeof metrics.edgeEnergy === "number" ? metrics.edgeEnergy : Math.sqrt(Math.max(0, item.sharp));
@@ -1813,18 +2905,23 @@
         item.hash = ""; item.aHash = "";
       }
 
+      metrics=null;
       item.displayBlob = null;
       item.displayUrl = null;
       item._blobP = thumbP.then(function (blob) {
         item.thumbBlob = blob;
         item.thumbUrl = null;
-        releaseCanvas(thumbCanvas);
+        releaseCanvas(thumbCanvas); thumbCanvas=null;
       });
+      thumbP=null;
       item.analyzed = true; item.fromCache = false;
     } catch (err) {
+      if(img) {try { img.src = ""; img.removeAttribute("src"); } catch (_) {} img=null;}
       throw err;
     } finally {
-      releaseCanvas(analyzeCanvas);
+      if(img) {try { img.src = ""; img.removeAttribute("src"); } catch (_) {} img=null;}
+      if(runFaceMode) {analyzeCanvas.width=1;analyzeCanvas.height=1;}
+      else releaseCanvas(analyzeCanvas);
     }
   }
 
@@ -1870,9 +2967,13 @@
   function autoChoiceFor(p, groupSize, th) {
     if (groupSize > 1) return p.isBest ? "keep" : "delete";
     const q = isBadQuality(p, th);
-    if (q.over || q.under) return "delete";
+    // Singletons: delete only for severe problems (明顯過曝 / 明顯欠曝 / 嚴重模糊).
+    // Slight underexposure such as real01 r05 must be kept.
+    if (p.mean >= 220) return "delete";
+    if (p.mean <= 25) return "delete";
     if (q.flat) return "keep";
-    return q.bad ? "delete" : "keep";
+    if (!q.over && !q.under && !q.flat && q.blur && p.sharp < th.sharpTh * 0.5) return "delete";
+    return "keep";
   }
 
   function exposureReason(q, p) {
@@ -1888,6 +2989,11 @@
     if (p.userTouched) {
       if (p.choice === "keep" && p.autoChoice === "delete") return "你手動保留";
       if (p.choice === "delete" && p.autoChoice === "keep") return "你手動刪除";
+    }
+    if (p.faceRules && groupSize > 1) {
+      if (!p.faces?.length && p.choice === "delete") return "同組有臉部較清楚的一張";
+      if (p.isBest && p.choice === "keep") return p.faceWinLabel || "同組臉部較清楚";
+      if (p.choice === "delete") return p.faceLossReason || "同組有臉部較清楚的一張";
     }
     const q = isBadQuality(p, th);
     const exp = exposureReason(q, p);
@@ -1914,12 +3020,151 @@
       return "同組非最佳";
     }
 
-    // Single photo: exposure first, then flat, then blur
-    if (exp) return exp;
+    // Single photo: exposure/blur reasons only when deleted (severe issues).
+    if (p.choice === "delete") {
+      if (exp) return exp;
+      if (q.blur) return "模糊";
+      return "你手動刪除";
+    }
     if (q.flat) return "畫面單調";
-    if (q.blur) return "模糊";
-    if (p.choice === "keep") return "單張清晰保留";
-    return "你手動刪除";
+    return "單張清晰保留";
+  }
+
+  // Group index N and size M for 「第 N/M 張」. N is 1-based in capture-time
+  // then filename order (not keep-first, not filename-only). Singletons are 1/1.
+  function assignGroupPositions(g) {
+    const ordered = g.slice().sort(function (a, b) {
+      const dt = photoTime(a) - photoTime(b);
+      return dt || a.name.localeCompare(b.name);
+    });
+    for (let i = 0; i < ordered.length; i++) ordered[i].groupPos = i + 1;
+    const kept = g.find(function (x) { return x.isBest; }) || g[0];
+    g.forEach(function (p) {
+      p.groupKeptPos = kept ? kept.groupPos : null;
+      p.groupKeptId = kept ? kept.id : null;
+    });
+  }
+  function reasonChip(code, params) {
+    const chip = { code: code };
+    if (params && Object.keys(params).length) chip.params = params;
+    return chip;
+  }
+  function exposureCode(q) {
+    if (q.over) return "tooBright";
+    if (q.under) return "tooDark";
+    return "";
+  }
+  function dupOfParams(group) {
+    const kept = group.find(function (x) { return x.isBest; }) || group[0];
+    return { id: kept.id, n: kept.groupPos };
+  }
+  /**
+   * Structured reasons the reason-chip UI can bind to 1:1.
+   * Record only factors that actually decided this photo; never a nicer
+   * reason added afterwards. Expression codes appear only when this run
+   * used the face model and that signal participated in the decision.
+   */
+  function computeReasons(p, group, th) {
+    const groupSize = group.length;
+    const q = isBadQuality(p, th);
+    const expCode = exposureCode(q);
+    const secondary = [];
+    const exprOn = !!runFaceMode;
+    function pack(primary, extra) {
+      return {
+        primary: primary,
+        secondary: extra || [],
+        groupPos: p.groupPos || 1,
+        groupSize: groupSize,
+        keptPos: p.groupKeptPos || null,
+        keptId: p.groupKeptId || null,
+        faceSwapped: !!p.faceChanged,
+        faceChanged: !!p.faceChanged,
+        faceSwapKind: p.faceSwapKind || null,
+        sharpestPos: p.sharpestPos || null
+      };
+    }
+
+    if (p.userTouched) {
+      if (p.choice === "keep" && p.autoChoice === "delete") return pack(reasonChip("manualKeep"));
+      if (p.choice === "delete" && p.autoChoice === "keep") return pack(reasonChip("manualDelete"));
+    }
+
+    if (exprOn && p.faceChanged && p.choice === "delete" && p.sharpestId && p.id === p.sharpestId) {
+      if (expCode) secondary.push(reasonChip(expCode));
+      if (q.blur) secondary.push(reasonChip("blurrier"));
+      const better = p.faceSwapKind === "faceSharp" ? "faceSharpBetter" : "exprBetter";
+      return pack(reasonChip(better, { n: p.groupKeptPos, id: p.groupKeptId }), secondary);
+    }
+
+    if (exprOn && p.faceRules && groupSize > 1) {
+      if ((!p.faces || !p.faces.length) && p.choice === "delete") {
+        return pack(reasonChip("dupOf", dupOfParams(group)));
+      }
+      if (p.isBest && p.choice === "keep") {
+        if (p.faceChanged && p.faceSwapKind === "faceSharp") {
+          return pack(reasonChip("faceSharpest"));
+        }
+        const dec = p.faceDecisive;
+        if (dec === "fun") {
+          const main = (p.faces || []).filter(function (f) { return f.area >= 0.03; });
+          const selected = main.length ? main : (p.faces || []);
+          const funFace = selected.length ? selected.reduce(function (a, b) { return a.fun >= b.fun ? a : b; }) : null;
+          return pack(reasonChip("funnyExpr", funFace ? { kind: funFace.funKind, label: funKeyword(funFace.funKind) } : null));
+        }
+        if (dec === "smile") return pack(reasonChip("smile"));
+        if (dec === "blink") return pack(reasonChip("eyesOpen"));
+        return pack(reasonChip("sharpest"));
+      }
+      if (p.choice === "delete") {
+        const kept = group.find(function (x) { return x.isBest; }) || group[0];
+        const bothInPool = !!(kept.faces && kept.faces.length && p.faces && p.faces.length && kept.faceTiePool && p.faceTiePool);
+        const blinkParticipated = bothInPool && kept.faceFailed !== p.faceFailed;
+        if (p.faceFailed && blinkParticipated) {
+          secondary.push(reasonChip("dupOf", dupOfParams(group)));
+          return pack(reasonChip("eyesMaybeClosed"), secondary);
+        }
+        // Lost on face clarity: blurrier only if relative/absolute blur also applied.
+        // Do not add exposure as a secondary — computeReason never uses it on this path.
+        if (p.faceLossReason === "同組有臉部較清楚的一張" && q.blur) secondary.push(reasonChip("blurrier"));
+        return pack(reasonChip("dupOf", dupOfParams(group)), secondary);
+      }
+    }
+
+    if (groupSize > 1) {
+      if (p.isBest) {
+        if (p.choice === "keep") {
+          if (expCode) return pack(reasonChip(expCode));
+          if (q.flat) return pack(reasonChip("flat"));
+          return pack(reasonChip("sharpest"));
+        }
+        return pack(reasonChip("manualDelete"));
+      }
+      if (p.choice === "delete") {
+        const dup = reasonChip("dupOf", dupOfParams(group));
+        if (expCode) {
+          if (q.blur) secondary.push(reasonChip("blurrier"));
+          secondary.push(dup);
+          return pack(reasonChip(expCode), secondary);
+        }
+        if (q.blur) {
+          secondary.push(dup);
+          return pack(reasonChip("blurrier"), secondary);
+        }
+        return pack(dup);
+      }
+      if (expCode) return pack(reasonChip(expCode));
+      if (q.flat) return pack(reasonChip("flat"));
+      return pack(reasonChip("dupOf", dupOfParams(group)));
+    }
+
+    if (p.choice === "delete") {
+      if (expCode) return pack(reasonChip(expCode));
+      if (q.blur) return pack(reasonChip("blurrier"));
+      return pack(reasonChip("manualDelete"));
+    }
+    if (q.flat) return pack(reasonChip("flat"));
+    return pack(reasonChip("onlyOne"));
   }
 
   /**
@@ -1935,10 +3180,23 @@
     if (edge < 4 && std < 15) return true;
     return false;
   }
+  function fileTimesUnreliable(a, b) {
+    // No real capture time: both fell back to File.lastModified, and those mtimes
+    // are identical or within 1s (typical of a folder copy). Do not treat that as a burst clock.
+    if (!a || !b) return false;
+    if (a.dateSource === "exif" || b.dateSource === "exif") return false;
+    return Math.abs(photoTime(a) - photoTime(b)) <= 1000;
+  }
   function isSimilarPair(a, b, th) {
     const dist = hashDistance(a, b);
+    if (dist <= 4) return true;
+    if (fileTimesUnreliable(a, b)) {
+      // Visual similarity only. Threshold is the existing hashTh; grouping uses union-find
+      // so similar photos merge transitively (founder-only assignment used to split bursts).
+      return dist <= th.hashTh;
+    }
     const timeOk = Math.abs(photoTime(a) - photoTime(b)) <= th.timeTh;
-    return dist <= 4 || (timeOk && dist <= th.hashTh);
+    return timeOk && dist <= th.hashTh;
   }
   /**
    * Skip grouping only when textureless AND not similar to any non-monotone image.
@@ -1991,6 +3249,61 @@
       }
       gid++;
     }
+    // Second pass (v10k), only for no-EXIF photos with identical file mtimes (visual similarity only):
+    // attach a leftover singleton to a group if it matches ANY ORIGINAL first-pass member
+    // within hashTh (founder-only assignment used to miss these, e.g. r12→C via r11).
+    // Two already-formed multi-photo groups never merge (the v10h multi–multi dist≤4
+    // exception is removed). A singleton attached here must not act as a bridge:
+    // candidate edges are checked only against first-pass membership snapshotted
+    // before this pass begins, so the result is order-independent. Similarity to a
+    // photo that itself attaches in this pass does not count (C→B→group must not
+    // then pull in D that is only similar to C).
+    const firstPassGid = [];
+    const firstPassMembers = {};
+    for (let i = 0; i < analyzed.length; i++) {
+      const gid = analyzed[i].groupId;
+      firstPassGid[i] = gid;
+      if (!firstPassMembers[gid]) firstPassMembers[gid] = [];
+      firstPassMembers[gid].push(analyzed[i]);
+    }
+    const firstPassIds = [];
+    for (const k in firstPassMembers) if (Object.prototype.hasOwnProperty.call(firstPassMembers, k)) firstPassIds.push(+k);
+    // Decide every singleton's target against the snapshot, then apply. Do not
+    // follow a target that itself attached — assign to the target's first-pass
+    // group id, not to wherever that group later moved.
+    const attachTo = {};
+    for (let i = 0; i < analyzed.length; i++) {
+      const sGid = firstPassGid[i];
+      if (!firstPassMembers[sGid] || firstPassMembers[sGid].length !== 1) continue;
+      const s = analyzed[i];
+      let bestT = null, bestDist = Infinity;
+      for (let t = 0; t < firstPassIds.length; t++) {
+        const tGid = firstPassIds[t];
+        if (tGid === sGid) continue;
+        const tMembers = firstPassMembers[tGid];
+        let m = 64;
+        for (let j = 0; j < tMembers.length; j++) {
+          if (fileTimesUnreliable(s, tMembers[j])) m = Math.min(m, hashDistance(s, tMembers[j]));
+        }
+        if (m > th.hashTh) continue;
+        // Prefer a first-pass multi over a leftover singleton so a close
+        // leftover (C) cannot pull B away from the group B actually matches
+        // (B→G via an original member). Among equal class, closer then smaller gid.
+        const tIsMulti = tMembers.length >= 2;
+        const bestIsMulti = bestT != null && firstPassMembers[bestT].length >= 2;
+        if (bestT == null
+            || (tIsMulti && !bestIsMulti)
+            || (tIsMulti === bestIsMulti && (m < bestDist || (m === bestDist && tGid < bestT)))) {
+          bestDist = m;
+          bestT = tGid;
+        }
+      }
+      if (bestT != null) attachTo[sGid] = bestT;
+    }
+    for (let i = 0; i < analyzed.length; i++) {
+      const sGid = firstPassGid[i];
+      if (attachTo[sGid] != null) analyzed[i].groupId = attachTo[sGid];
+    }
     const byGroup = {};
     analyzed.forEach(function (p) {
       if (!byGroup[p.groupId]) byGroup[p.groupId] = [];
@@ -1999,10 +3312,40 @@
     const gkeys = Object.keys(byGroup);
     for (let gi = 0; gi < gkeys.length; gi++) {
       const g = byGroup[gkeys[gi]];
-      g.sort(function (a, b) { return qualityScore(b) - qualityScore(a); });
+      if (runFaceMode) {
+        rankFaceGroup(g);
+      } else {
+        g.forEach(function (p) {
+          p.faceRules = false; p.faceWinLabel = ""; p.faceLossReason = ""; p.faceDecisive = "";
+          p.faceFailed = false; p.faceExpression = 0; p.faceTiePool = false;
+        });
+        g.sort(function (a, b) { return qualityScore(b) - qualityScore(a); });
+      }
       g[0].isBest = true;
+      if (runFaceMode) describeFaceWinner(g);
+      else g.forEach(function (p) { p.faceWinLabel = ""; p.faceLossReason = ""; });
       const bestSharp = Math.max.apply(null, g.map(function (x) { return x.sharp; }));
       g.forEach(function (x) { x.groupBestSharp = bestSharp; });
+      assignGroupPositions(g);
+      // Counterfactual: would qualityScore-only (判斷表情 OFF) pick the same keeper?
+      if (runFaceMode && g.length > 1) {
+        const qBest = g.slice().sort(function (a, b) { return qualityScore(b) - qualityScore(a); })[0];
+        const changed = !!(g[0] && qBest && g[0].id !== qBest.id);
+        const dec = g[0] && g[0].faceDecisive;
+        const kind = !changed ? null : ((dec === "smile" || dec === "fun" || dec === "blink") ? "expr" : "faceSharp");
+        g.forEach(function (x) {
+          x.faceChanged = changed;
+          x.faceSwapKind = kind;
+          x.exprChanged = kind === "expr";
+          x.sharpestPos = qBest ? (qBest.groupPos || null) : null;
+          x.sharpestId = qBest ? qBest.id : null;
+        });
+      } else {
+        g.forEach(function (x) {
+          x.faceChanged = false; x.faceSwapKind = null; x.exprChanged = false;
+          x.sharpestPos = null; x.sharpestId = null;
+        });
+      }
     }
     for (let i = 0; i < analyzed.length; i++) {
       const p = analyzed[i];
@@ -2014,6 +3357,7 @@
       p.badQuality = q.bad;
       p.suggestDelete = p.choice === "delete";
       p.reason = computeReason(p, g.length, th);
+      p.reasons = computeReasons(p, g, th);
     }
   }
 
@@ -2029,7 +3373,7 @@
         grayStd: p.grayStd, edgeEnergy: p.edgeEnergy, flat: !!p.flat,
         hash: p.hash, aHash: p.aHash,
         thumbBlob: p.thumbBlob, displayBlob: p.displayBlob,
-        captureMs: p.captureMs, dateSource: p.dateSource, aspW: p.aspW || 0, aspH: p.aspH || 0,
+        captureMs: p.captureMs, dateSource: p.dateSource, aspW: p.aspW || 0, aspH: p.aspH || 0, faces: p.faces || [], faceScored: !!p.faceScored, faceError: p.faceError || null, faceInferenceMs: p.faceInferenceMs || 0,
       };
     }
     await idbSet(p.id, payload);
@@ -2219,6 +3563,115 @@
     mates.sort(function (a, b) { return (b.isBest ? 1 : 0) - (a.isBest ? 1 : 0); });
     return mates;
   }
+  const CHIP_LABEL = {
+    sharpest: "最清晰", smile: "有笑容", eyesOpen: "睜眼",
+    eyesMaybeClosed: "可能閉眼", onlyOne: "唯一一張", blurrier: "比較模糊",
+    tooDark: "太暗", tooBright: "太亮", flat: "太單調",
+    manualKeep: "你手動留", manualDelete: "你手動刪"
+  };
+  const CHIP_KEEP = { sharpest: 1, smile: 1, funnyExpr: 1, eyesOpen: 1, onlyOne: 1, manualKeep: 1, faceSharpest: 1 };
+  const CHIP_DEL = { dupOf: 1, blurrier: 1, tooDark: 1, tooBright: 1, manualDelete: 1, exprBetter: 1, faceSharpBetter: 1 };
+  function chipLabel(chip) {
+    if (!chip || !chip.code) return "";
+    if (chip.code === "funnyExpr") return "表情有趣：" + ((chip.params && chip.params.label) || "大笑");
+    if (chip.code === "dupOf") return "和第 " + ((chip.params && chip.params.n) || "?") + " 張重複";
+    if (chip.code === "exprBetter") return "第 " + ((chip.params && chip.params.n) || "?") + " 張表情較好";
+    if (chip.code === "faceSharpest") return "臉最清楚";
+    if (chip.code === "faceSharpBetter") return "第 " + ((chip.params && chip.params.n) || "?") + " 張臉較清楚";
+    return CHIP_LABEL[chip.code] || chip.code;
+  }
+  function chipClass(chip, isPrimary, choice) {
+    const code = chip && chip.code;
+    const cls = ["chip", isPrimary ? "chip-main" : "chip-sub"];
+    if (code === "eyesMaybeClosed") { cls.push("chip-amber"); if (!isPrimary) cls[1] = "chip-sub"; return cls.join(" "); }
+    if (code === "flat" && choice === "keep") return "chip chip-sub";
+    if (CHIP_KEEP[code]) cls.push(choice === "delete" && code === "manualKeep" ? "tone-keep" : "tone-keep");
+    else if (CHIP_DEL[code] || (code === "flat" && choice === "delete")) cls.push("tone-del");
+    // Keep-card exposure labels stay red (honest to the reason), except 你手動留.
+    if ((code === "tooDark" || code === "tooBright") && choice === "keep") {
+      cls.length = 2; cls.push("tone-del");
+    }
+    return cls.join(" ");
+  }
+  function chipHtml(chip, isPrimary, p, compact) {
+    if (!chip) return "";
+    const label = chipLabel(chip);
+    const cls = chipClass(chip, isPrimary, p.choice);
+    if ((chip.code === "dupOf" || chip.code === "exprBetter" || chip.code === "faceSharpBetter") && !compact) {
+      const n = chip.params && chip.params.n;
+      const id = (chip.params && chip.params.id) || p.groupKeptId || "";
+      const aria = chip.code === "exprBetter"
+        ? ("第 " + (n || "") + " 張表情較好")
+        : chip.code === "faceSharpBetter"
+          ? ("第 " + (n || "") + " 張臉較清楚")
+          : ("看留下的第 " + (n || "") + " 張");
+      return '<button type="button" class="' + cls + ' chip-jump" data-act="group-ref" data-ref-id="' + escapeAttr(id) + '" aria-label="' + escapeAttr(aria) + '">' +
+        escapeHtml(label) + ' <span class="chevron" aria-hidden="true">›</span></button>';
+    }
+    if (compact) return '<span class="' + cls + '"><span class="chip-text">' + escapeHtml(label) + "</span></span>";
+    return '<span class="' + cls + '">' + escapeHtml(label) + "</span>";
+  }
+  function reasonChipsHtml(p, compact) {
+    const rs = p.reasons || { primary: { code: "onlyOne" }, secondary: [] };
+    const all = [rs.primary].concat(rs.secondary || []).filter(Boolean);
+    if (compact) {
+      const first = all[0];
+      if (!first) return "";
+      return '<div class="reason-chips">' + chipHtml(first, true, p, true) + "</div>";
+    }
+    const shown = all.slice(0, 3);
+    const hidden = all.length - shown.length;
+    let html = '<div class="reason-chips">';
+    for (let i = 0; i < shown.length; i++) html += chipHtml(shown[i], i === 0, p, false);
+    if (hidden > 0) html += '<span class="chip chip-more">+' + hidden + "</span>";
+    html += "</div>";
+    return html;
+  }
+  function reasonExplText(p) {
+    const rs = p.reasons || {};
+    const code = rs.primary && rs.primary.code;
+    const m = rs.groupSize || p.groupSize || 1;
+    const kn = rs.keptPos || p.groupKeptPos;
+    const secs = rs.secondary || [];
+    const has = function (c) { return secs.some(function (s) { return s.code === c; }); };
+    if ((rs.faceChanged || p.faceChanged) && p.choice === "keep" && p.isBest) {
+      const sp = rs.sharpestPos || p.sharpestPos;
+      const kind = rs.faceSwapKind || p.faceSwapKind;
+      if (sp && kind === "faceSharp") return "第 " + sp + "/" + m + " 張整體較清楚，但這張臉比較清楚";
+      if (sp && kind === "expr") return "第 " + sp + "/" + m + " 張比較清楚，但這張表情比較好";
+    }
+    if (code === "onlyOne") return "只有這一張，沒有相似的可以比";
+    if (code === "sharpest") return "同組 " + m + " 張裡最清楚";
+    if (code === "faceSharpest") return "同組 " + m + " 張裡臉比較清楚";
+    if (code === "smile") return "同組 " + m + " 張裡有笑容，也很清楚";
+    if (code === "funnyExpr") return "同組 " + m + " 張裡表情最有趣，也很清楚";
+    if (code === "eyesOpen") return "同組 " + m + " 張裡有睜眼，也很清楚";
+    if (code === "exprBetter") return "第 " + (kn || (rs.primary && rs.primary.params && rs.primary.params.n) || "") + " 張表情比較好，這張可以刪";
+    if (code === "faceSharpBetter") return "第 " + (kn || (rs.primary && rs.primary.params && rs.primary.params.n) || "") + " 張臉比較清楚，這張可以刪";
+    if (code === "eyesMaybeClosed") {
+      let s = "可能閉眼";
+      if (has("tooDark")) s += "，也偏暗";
+      else if (has("tooBright")) s += "，也偏亮";
+      if (kn) s += "，第 " + kn + " 張比較清楚";
+      return s;
+    }
+    // v10o: explanation always follows the primary reason (PM). Exposure primaries never borrow
+    // the duplicate secondary's 「比較清楚」 wording.
+    if (code === "tooDark" || code === "tooBright") {
+      const own = rs.groupPos || p.groupPos || 0;
+      const base = code === "tooDark" ? "這張太暗" : "這張太亮";
+      return (m > 1 && kn && kn !== own) ? (base + "，留下的是第 " + kn + " 張") : base;
+    }
+    if (code === "dupOf" || has("dupOf")) return "第 " + (kn || (rs.primary && rs.primary.params && rs.primary.params.n) || "") + " 張比較清楚，這張可以刪";
+    if (code === "blurrier") return kn ? ("第 " + kn + " 張比較清楚，這張可以刪") : "這張比較模糊";
+    if (code === "tooDark") return "這張太暗";
+    if (code === "tooBright") return "這張太亮";
+    if (code === "flat") return "畫面比較單調";
+    if (code === "manualKeep") return "你手動留下這一張";
+    if (code === "manualDelete") return "你手動刪除這一張";
+    return p.reason || "";
+  }
+
   function groupRefHtml(p) {
     if (!p || p.groupId == null || (p.groupSize || 1) <= 1) return "";
     const keepers = groupKeepersFor(p);
@@ -2227,11 +3680,10 @@
       return '<div class="group-ref none"><span class="gr-text">同組 ' + p.groupSize + " 張目前都沒有留</span></div>";
     }
     const k = keepers[0];
-    const more = keepers.length > 1 ? "（另 " + (keepers.length - 1) + " 張）" : "";
-    return '<div class="group-ref">' +
-      '<button type="button" class="gr-thumb" data-act="group-ref" data-ref-id="' + escapeAttr(k.id) + '" aria-label="看同組保留的 ' + escapeAttr(k.name) + '">' +
-        '<img alt="" data-pid="' + escapeAttr(k.id) + '" data-kind="mini" /></button>' +
-      '<span class="gr-text">同組保留：' + escapeHtml(k.name) + more + "</span></div>";
+    const n = k.groupPos || p.groupKeptPos || "";
+    return '<button type="button" class="group-ref" data-act="group-ref" data-ref-id="' + escapeAttr(k.id) + '" aria-label="留下的是第 ' + escapeAttr(String(n)) + ' 張">' +
+      '<span class="gr-thumb"><img alt="" data-pid="' + escapeAttr(k.id) + '" data-kind="mini" /></span>' +
+      '<span class="gr-text">留下的是第 ' + escapeHtml(String(n)) + " 張</span></button>";
   }
   function rescuedNoteText(p) {
     if (!rescuedPending[p.id] || matchesFilter(p, resultFilter) || resultFilter === "all") return "";
@@ -2254,6 +3706,16 @@
     const r = cardRatio(p);
     return '<div class="thumb-wrap"' + (r ? ' style="aspect-ratio:' + r.toFixed(4) + '"' : "") + ">";
   }
+  function jumpToKeptPhoto(refId, from) {
+    const node = el.cards && el.cards.querySelector('[data-id="' + CSS.escape(refId) + '"]');
+    if (node) {
+      node.scrollIntoView({ behavior: "smooth", block: "center" });
+      node.classList.add("jump-hl");
+      setTimeout(function () { node.classList.remove("jump-hl"); }, 1200);
+      return;
+    }
+    openViewer(refId, { preferGroup: true, gid: from && from.groupId });
+  }
   function cardHtml(p, opts) {
     opts = opts || {};
     const compact = !!(opts && opts.compact);
@@ -2262,9 +3724,6 @@
     if (compact) cls.push("card-compact");
     if (filtered) cls.push("filtered");
     if (filtered && rescuedPending[p.id] && !matchesFilter(p, resultFilter)) cls.push(resultFilter === "delete" ? "rescued" : "just-moved");
-    const tags = [];
-    if (p.isBest && p.groupSize > 1 && !filtered) tags.push('<span class="tag best">建議留下</span>');
-    if (p.userTouched) tags.push('<span class="tag manual">手動</span>');
     const badgeCls = p.choice === "keep" ? "keep" : "delete";
     const badgeText = p.choice === "keep" ? "留" : "刪";
     const showRestore = p.userTouched && p.choice !== p.autoChoice;
@@ -2276,35 +3735,41 @@
     const restoreHtml = showRestore
       ? '<button type="button" class="restore-link" data-act="restore">還原</button>'
       : "";
+    const posN = p.groupPos || (p.reasons && p.reasons.groupPos) || 0;
+    const posM = p.groupSize || (p.reasons && p.reasons.groupSize) || 1;
+    const posLabel = "第 " + posN + "/" + posM + " 張";
+    const showPos = posM > 1 && posN > 0;
     if (compact) {
       return (
         '<article class="' + cls.join(" ") + '" data-id="' + escapeAttr(p.id) + '" tabindex="-1">' +
           thumbWrapOpen(p, true) +
             '<span class="thumb-placeholder" aria-hidden="true"></span>' +
             '<img data-pid="' + escapeAttr(p.id) + '" data-kind="display" alt="" width="720" height="540" />' +
-            '<span class="choice-badge ' + badgeCls + '">' + badgeText + "</span>" +
+            faceDebugHtml(p) + '<span class="choice-badge ' + badgeCls + '">' + badgeText + "</span>" +
           "</div>" +
           '<div class="meta meta-compact">' +
-            '<div class="reason">' + escapeHtml(p.reason || "") + "</div>" +
+            (showPos ? '<div class="pos-line">' + escapeHtml(posLabel) + "</div>" : "") +
+            reasonChipsHtml(p, true) +
             switchHtml + restoreHtml +
-            '<button type="button" class="btn-view-full" data-act="view">看大圖</button>' +
           "</div>" +
         "</article>"
       );
     }
+    const manualTag = p.userTouched ? '<div class="tag-row"><span class="tag manual">手動</span></div>' : "";
     return (
       '<article class="' + cls.join(" ") + '" data-id="' + escapeAttr(p.id) + '" tabindex="-1">' +
         thumbWrapOpen(p, false) +
           '<span class="thumb-placeholder" aria-hidden="true"></span>' +
           '<img data-pid="' + escapeAttr(p.id) + '" data-kind="display" alt="" width="720" height="540" />' +
-          '<span class="choice-badge ' + badgeCls + '">' + badgeText + "</span>" +
-          (tags.length ? '<div class="tag-row">' + tags.join("") + "</div>" : "") +
+          faceDebugHtml(p) + '<span class="choice-badge ' + badgeCls + '">' + badgeText + "</span>" +
+          (showPos ? '<span class="pos-tag">' + escapeHtml(posLabel) + "</span>" : "") +
+          manualTag +
         "</div>" +
         '<div class="meta">' +
           '<div class="fname">' + escapeHtml(p.name) + "</div>" +
-          '<div class="reason">' + escapeHtml(p.reason || "") + "</div>" +
-          (filtered ? groupRefHtml(p) : "") +
-          '<div class="scores">清晰度 ' + Math.round(p.sharp) + " · 亮度 " + Math.round(p.mean) + "</div>" +
+          reasonChipsHtml(p, false) +
+          '<p class="reason-expl">' + escapeHtml(reasonExplText(p)) + "</p>" +
+          (p.choice === "delete" ? groupRefHtml(p) : "") +
           (filtered && resultFilter === "delete"
             ? '<div class="card-controls">' + rescueBtnHtml(p) + "</div>"
             : '<div class="card-controls">' + switchHtml + restoreHtml + "</div>" +
@@ -2362,7 +3827,8 @@
         el.resultAdvPanel.classList.add("hidden");
       }
     }
-    if (mode === "result") el.progressBlock.classList.add("hidden");
+    if (mode === "result") { el.progressBlock.classList.add("hidden"); setPickHeroBusy(false); }
+    if (mode === "home" && !processing) setPickHeroBusy(false);
   }
 
   function groupBlockHtml(g) {
@@ -2471,16 +3937,31 @@
     renderResult();
     window.scrollTo(0, 0);
   }
-  function renderResult() {
-    const kept = keptPhotos();
-    const dels = deletedPhotos();
+  function faceChangedGroupCount() {
+    const seen = {};
+    let k = 0;
+    photos.forEach(function (p) {
+      if (p.analyzed && p.faceChanged && p.groupId != null && !seen[p.groupId]) { seen[p.groupId] = true; k++; }
+    });
+    return k;
+  }
+  function summaryCountsHtml() {
+    const kept = keptPhotos().length;
+    const dels = deletedPhotos().length;
     const total = photos.filter(function (p) { return p.analyzed; }).length;
-    el.summaryCounts.innerHTML =
-      '<span class="c-keep">留 <strong>' + kept.length + "</strong></span>" +
+    const k = faceChangedGroupCount();
+    document.body.classList.toggle("has-expr-swap", k > 0);
+    return '<div class="summary-nums">' +
+      '<span class="c-keep">留 <strong>' + kept + "</strong></span>" +
       '<span class="sep">　</span>' +
-      '<span class="c-del">刪 <strong>' + dels.length + "</strong></span>" +
+      '<span class="c-del">刪 <strong>' + dels + "</strong></span>" +
       '<span class="sep">　</span>' +
-      '<span class="c-total">共 <strong>' + total + "</strong></span>";
+      '<span class="c-total">共 <strong>' + total + "</strong></span>" +
+      "</div>" +
+      (k ? '<div class="expr-swap-line">有 ' + k + " 組因臉部判斷改選</div>" : "");
+  }
+  function renderResult() {
+    el.summaryCounts.innerHTML = summaryCountsHtml();
 
     const hintDismissed = localStorage.getItem(HINT_KEY) === "1";
     if (el.resultHint) el.resultHint.classList.toggle("hidden", hintDismissed || resultFilter !== "all");
@@ -2715,6 +4196,185 @@
     }
   }
 
+  function selectFaceCandidates(list) {
+    const by = {};
+    list.forEach(function (p) {
+      if (!p.analyzed) return;
+      if (!by[p.groupId]) by[p.groupId] = [];
+      by[p.groupId].push(p);
+    });
+    const out = [];
+    Object.keys(by).forEach(function (gid) {
+      const g = by[gid];
+      if (g.length < 2) {
+        g.forEach(function (p) { p.faces = []; p.faceScored = false; p.faceInferenceMs = 0; });
+        return;
+      }
+      const best = Math.max.apply(null, g.map(function (p) { return p.sharp; }));
+      const pool = g.filter(function (p) { return p.sharp >= best * 0.85; })
+        .sort(function (a, b) { return b.sharp - a.sharp; })
+        .slice(0, 4);
+      pool.forEach(function (p) { out.push(p); });
+      g.forEach(function (p) {
+        if (pool.indexOf(p) < 0) { p.faces = []; p.faceScored = false; p.faceInferenceMs = 0; }
+      });
+    });
+    return out;
+  }
+  let faceCanvasLock=Promise.resolve();
+  async function inferFaceOnly(item) {
+    // One photo at a time. Prefer the 512px scratch JPEG written in pass 1
+    // (no full-resolution re-decode). Release every bitmap, blob, canvas and
+    // detect buffer as soon as THIS photo is scored.
+    if (runFaceMode) await yieldToUI();
+    const canvas = faceAnalysisCanvas;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true, alpha: false });
+    let img = null, bmp = null, blob = null, releaseLock = null;
+    try {
+      const prev=faceCanvasLock;
+      faceCanvasLock=new Promise(function(r){releaseLock=r;});
+      await prev;
+      const scratch = await faceScratchGet(item.id);
+      if (scratch && scratch.bitmap) {
+        bmp = scratch.bitmap;
+        canvas.width = bmp.width; canvas.height = bmp.height;
+        ctx.drawImage(bmp, 0, 0);
+        if (bmp.close) bmp.close(); bmp = null;
+        faceScratchStats.blobsUsed++;
+      } else if (scratch && scratch.blob) {
+        blob = scratch.blob;
+        bmp = await createImageBitmap(blob);
+        blob = null;
+        canvas.width = bmp.width; canvas.height = bmp.height;
+        ctx.drawImage(bmp, 0, 0);
+        if (bmp.close) bmp.close(); bmp = null;
+        faceScratchStats.blobsUsed++;
+      } else {
+        // Rare fallback (cache-hit with no scratch): same HTML Image path as v10i.
+        await decodeAndDraw(item.file, canvas, ctx, FACE_INPUT_MAX);
+        img = null;
+      }
+      analyzeFaces(item, canvas);
+      if (item.faces && item.faces.length) item.faces = item.faces.map(compactFace);
+      item.faceScored = runFaceMode && !item.faceError;
+    } finally {
+      if (bmp && bmp.close) try { bmp.close(); } catch (_) {}
+      bmp = null; blob = null;
+      if (img) { try { img.src = ""; img.removeAttribute("src"); } catch (_) {} img = null; }
+      canvas.width = 1; canvas.height = 1;
+      if (faceCropCanvas) { faceCropCanvas.width = 1; faceCropCanvas.height = 1; }
+      if (releaseLock) releaseLock();
+    }
+  }
+  async function runFacePass(targets, allPhotos) {
+    if (!runFaceMode || !readyFaceTask) return;
+    const total = (allPhotos && allPhotos.length) || (targets && targets.length) || 0;
+    if (!total) return;
+    const need = {};
+    for (let i = 0; i < (targets || []).length; i++) need[targets[i].id] = true;
+    const queue = allPhotos && allPhotos.length ? allPhotos : (targets || []);
+    let done = 0;
+    el.progressText.textContent = "判斷表情中… 0 / " + total;
+    el.progressBar.style.width = "0%";
+    let cursor = 0;
+    // v10f flush cadence: 64ms idle, then drain every 16 with a 64ms idle
+    // after each fresh segment. One in-flight inference (lock-before-decode).
+    // Non-candidates and singles still increment n so the bar ends at 總張數/總張數.
+    await new Promise(function(resolve){ setTimeout(resolve, 64); });
+    async function job(segmentEnd) {
+      while (processing) {
+        await waitIfPaused();
+        if (!processing || cursor >= segmentEnd) return;
+        const item = queue[cursor++];
+        if (need[item.id]) {
+          try { await inferFaceOnly(item); }
+          catch (err) { console.warn(err); item.faces = []; item.faceError = String(err); item.faceScored = false; }
+        }
+        done++;
+        const pct = Math.round(done / total * 100);
+        el.progressBar.style.width = pct + "%";
+        el.progressText.textContent = "判斷表情中… " + done + " / " + total;
+      }
+    }
+    while (processing && cursor < queue.length) {
+      const freshBefore = done;
+      const segmentEnd = Math.min(queue.length, cursor + 16);
+      // One in-flight job. Three waiters used to hold scratch RPC / closure temps across 16-photo segments.
+      await job(segmentEnd);
+      if (processing && cursor < queue.length && done > freshBefore) {
+        await new Promise(function(resolve){ setTimeout(resolve, 64); });
+      }
+    }
+    if (done >= total) {
+      el.progressBar.style.width = "100%";
+      el.progressText.textContent = "判斷表情中… " + total + " / " + total;
+    }
+  }
+
+  let modelWaitNotify = null;
+  function setPickHeroBusy(on) {
+    const hero = document.querySelector(".pick-hero");
+    if (hero) hero.classList.toggle("is-busy", !!on);
+  }
+  function setModelWaitUI(on) {
+    modelWaitActive = !!on;
+    const track = el.progressTrack || (el.progressBar && el.progressBar.parentElement);
+    if (el.btnSkipFaceWait) el.btnSkipFaceWait.classList.toggle("hidden", !on);
+    if (el.btnPause) el.btnPause.classList.toggle("hidden", !!on);
+    if (on) {
+      if (track) track.classList.add("indet");
+      if (el.progressBar) el.progressBar.style.width = "36%";
+      if (el.progressText) el.progressText.textContent = "準備表情模型中…";
+    } else {
+      if (track) track.classList.remove("indet");
+      if (el.btnSkipFaceWait) el.btnSkipFaceWait.classList.add("hidden");
+      if (el.btnPause) el.btnPause.classList.remove("hidden");
+    }
+  }
+  function notifyModelWait(which) {
+    if (typeof modelWaitNotify === "function") {
+      const fn = modelWaitNotify;
+      modelWaitNotify = null;
+      fn(which);
+    }
+  }
+  async function waitForFaceModelOrSkip() {
+    faceReadyAppliesThisRun = true;
+    setModelWaitUI(true);
+    getFaceTask().catch(function () {});
+    const outcome = await new Promise(function (resolve) {
+      let settled = false;
+      function done(which) {
+        if (settled) return;
+        settled = true;
+        modelWaitNotify = null;
+        resolve(which);
+      }
+      modelWaitNotify = done;
+      getFaceTask().then(function () { done("ready"); }, function () { done("fail"); });
+      const poll = setInterval(function () {
+        if (!processing) { clearInterval(poll); done("cancel"); }
+        else if (readyFaceTask) { clearInterval(poll); done("ready"); }
+      }, 50);
+      const prev = modelWaitNotify;
+      modelWaitNotify = function (which) {
+        clearInterval(poll);
+        prev(which);
+      };
+    });
+    setModelWaitUI(false);
+    if (outcome !== "ready") faceReadyAppliesThisRun = false;
+    if (outcome === "skip") {
+      showToast("這次先不判斷表情");
+    }
+    if (outcome === "fail") {
+      if (el.progressText) el.progressText.textContent = "表情模型無法載入，改以清晰度判斷";
+      showToast("表情模型無法載入，改以清晰度判斷");
+      await new Promise(function (r) { setTimeout(r, 600); });
+    }
+    return outcome;
+  }
+
   async function processFiles(fileList) {
     if (processing) return;
     processing = true; paused = false; pauseWaiters = [];
@@ -2728,6 +4388,8 @@
       alert("沒有可讀取的影像檔");
       return;
     }
+    hideCrashHint();
+    setAnalysisFlag();
     // Revoke prior blob URLs before dropping photo refs
     photos.forEach(revokeThumbUrl);
     liveThumbOrder.length = 0;
@@ -2736,27 +4398,42 @@
     displayEncodeInflight = 0;
     photos = [];
     unreadableFiles = [];
+    resetFaceScratchStats();
+    await faceScratchDropAll();
+    faceScratchStats.estimateBefore = await sampleStorageEstimate();
+    faceScratchStats.estimatePeak = faceScratchStats.estimateBefore;
+    faceScratchStats.heapBefore = sampleJsHeap();
+    faceScratchStats.heapPeak = faceScratchStats.heapBefore;
     if (el.onlyBadPanel) { el.onlyBadPanel.classList.add("hidden"); el.onlyBadList.innerHTML = ""; }
     expandedSegThumbs = {};
     showFinish = false;
     expandedGroups = {};
     setScreen("home");
+    setPickHeroBusy(true);
     el.progressBlock.classList.remove("hidden");
     el.advPanel.classList.add("hidden");
     el.progressBar.style.width = "0%";
-    el.progressText.textContent = "0 / " + files.length + "（0%）";
-    getMetricWorker();
-    getEncodeWorker();
-    getEncodeWorker();
+    el.progressBlock.classList.remove("hidden");
+    let skipFaceThisRun = false;
+    if (faceExprPref && !readyFaceTask) {
+      const wait = await waitForFaceModelOrSkip();
+      if (!processing || wait === "cancel") { setPickHeroBusy(false); return; }
+      if (wait === "skip" || wait === "fail") skipFaceThisRun = true;
+    }
+    // Snapshot pref + model after the wait: a late-arriving model or a skip
+    // only affects THIS run via skipFaceThisRun; the saved pref is unchanged.
+    runFaceMode = !!readyFaceTask && !!faceExprPref && !skipFaceThisRun;
+    faceRuntimeStats.runMode = runFaceMode ? "faces" : "v9";
+    el.progressBar.style.width = "0%";
+    el.progressText.textContent = "整理照片中… 0 / " + files.length;
+    // Workers start lazily when first needed, and only if runFaceMode is on.
+    // With 判斷表情 OFF: metrics and hashes run on the main thread, thumbs
+    // and display JPEGs use canvas.toBlob, and no Worker is constructed.
 
     const t0 = performance.now();
     let skippedCache = 0, analyzedFresh = 0;
 
-    for (let i = 0; i < files.length; i += BATCH) {
-      await waitIfPaused();
-      if (!processing) break;
-      const chunk = files.slice(i, i + BATCH);
-      await Promise.all(chunk.map(async function (file) {
+    async function processOneFile(file) {
         const id = fileKey(file.name, file.size, file.lastModified);
         const item = {
           id: id, file: file, name: file.name, size: file.size, lastModified: file.lastModified,
@@ -2774,36 +4451,145 @@
         }
         try {
           if (!file.size) throw new Error("empty");
-          if (applyCachedAnalysis(item, saved)) skippedCache++;
+          if (applyCachedAnalysis(item, saved)) {
+            // v10q: saved captureMs may come from an older parser (DateTime first). Re-read the
+            // date (128KB slice, DateTimeOriginal first) so grouping never uses a stale time.
+            const cap = await readCaptureDate(file);
+            item.captureMs = cap.ms; item.dateSource = cap.source;
+            skippedCache++;
+          }
           else { await analyzeOne(item); analyzedFresh++; }
         } catch (err) {
           console.warn(err); item.analyzed = false;
         }
         if (item.analyzed) photos.push(item);
         else unreadableFiles.push(file.name);
-      }));
-      const done = Math.min(i + BATCH, files.length);
-      if (done === files.length || (i / BATCH) % 3 === 0) {
+    }
+    if(runFaceMode) {
+      // Three rolling file-analysis jobs; short drained segments bound queued snapshots.
+      // Cooperative idle lets encoding/GC finish naturally; never force GC or close the model.
+      // Canvas read/detect remains synchronous on the single shared analysis canvas.
+      let cursor=0,completed=0;
+      // v10f flush cadence: 64ms idle, then drain every 16 with a 64ms idle.
+      await new Promise(resolve=>setTimeout(resolve,64));
+      let segmentEnd=0;
+      async function runAnalysisJob() {
+        while(processing) {
+          await waitIfPaused();
+          if(!processing || cursor>=segmentEnd) return;
+          const index=cursor++;
+          await processOneFile(files[index]);
+          completed++;
+          {
+            const pct=Math.round(completed/files.length*100);
+            el.progressBar.style.width=pct+"%";
+            el.progressText.textContent="整理照片中… "+completed+" / "+files.length;
+          }
+        }
+      }
+      while(processing && completed<files.length) {
+        const freshBefore=analyzedFresh;
+        segmentEnd=Math.min(files.length,cursor+16);
+        await Promise.all(Array.from({length:3},()=>runAnalysisJob()));
+        if(completed<files.length && analyzedFresh>freshBefore) await new Promise(resolve=>setTimeout(resolve,64));
+      }
+      await sampleStorageEstimate(); // peak: all 512 JPEGs still on disk, before prune
+      faceScratchStats.heapAfterPass1 = sampleJsHeap();
+      if (faceScratchStats.heapAfterPass1 > faceScratchStats.heapPeak) faceScratchStats.heapPeak = faceScratchStats.heapAfterPass1;
+    } else {
+    const runBatch=BATCH;
+    for (let i = 0; i < files.length; i += runBatch) {
+      await waitIfPaused();
+      if (!processing) break;
+      const chunk = files.slice(i, i + runBatch);
+      await Promise.all(chunk.map(processOneFile));
+      const done = Math.min(i + runBatch, files.length);
+      if (done === files.length || (i / runBatch) % 3 === 0) {
         const left = files.length - done;
         const pct = Math.round((done / files.length) * 100);
         el.progressBar.style.width = pct + "%";
-        el.progressText.textContent = done + " / " + files.length + "（" + pct + "%）· 剩餘 " + left +
-          " 張 · 快取 " + skippedCache;
+        el.progressText.textContent = "整理照片中… " + done + " / " + files.length;
       }
     }
 
+    }
+
     await Promise.all(photos.map(function (p) { return p._blobP || Promise.resolve(); }));
+    // Even a runtime error cannot leave a mixed-scoring result set or cache.
+    if (runFaceMode && photos.some(p=>p.faceError)) {
+      runFaceMode=false; faceRuntimeStats.runMode="v9";
+      photos.forEach(p=>{p.faces=[];p.faceScored=false;p.faceError=null;p._faceModeChanged=true;});
+    }
     photos.sort(function (a, b) {
       return a.lastModified - b.lastModified || a.name.localeCompare(b.name);
     });
+    let faceCandidates = 0;
+    if (runFaceMode && readyFaceTask && processing && photos.length) {
+      recomputeGroupsAndLabels();
+      const allTargets = selectFaceCandidates(photos);
+      faceCandidates = allTargets.length;
+      // Drop scratch JPEGs for singles and other non-candidates before pass 2.
+      await faceScratchPruneExcept(new Set(allTargets.map(function (p) { return p.id; })));
+      await sampleStorageEstimate();
+      faceScratchStats.heapAfterPrune = sampleJsHeap();
+      if (faceScratchStats.heapAfterPrune > faceScratchStats.heapPeak) faceScratchStats.heapPeak = faceScratchStats.heapAfterPrune;
+      // Reuse v11 cache: do not re-infer a candidate that already has compact face scores.
+      // Unscored cached photos that just became candidates still run.
+      const targets = allTargets.filter(function (p) { return !p.fromCache || !p.faceScored; });
+      await runFacePass(targets, photos);
+      faceScratchStats.blobBytesAfterPass2 = faceScratchByteTotal();
+      faceScratchStats.estimateAfterPass2 = await sampleStorageEstimate();
+      faceScratchStats.heapAfterPass2 = sampleJsHeap();
+      if (faceScratchStats.heapAfterPass2 > faceScratchStats.heapPeak) faceScratchStats.heapPeak = faceScratchStats.heapAfterPass2;
+      await faceScratchDropAll();
+      faceScratchStats.blobBytesAfterCleanup = 0;
+      faceScratchStats.estimateAfterCleanup = await sampleStorageEstimate();
+      faceScratchStats.heapAfterCleanup = sampleJsHeap();
+    } else {
+      // No face pass, or aborted: never leave 512px scratch blobs behind.
+      faceScratchStats.blobBytesAfterPass2 = faceScratchByteTotal();
+      faceScratchStats.estimateAfterPass2 = await sampleStorageEstimate();
+      faceScratchStats.heapAfterPass2 = sampleJsHeap();
+      if (faceScratchStats.heapAfterPass2 > faceScratchStats.heapPeak) faceScratchStats.heapPeak = faceScratchStats.heapAfterPass2;
+      await faceScratchDropAll();
+      faceScratchStats.blobBytesAfterCleanup = 0;
+      faceScratchStats.estimateAfterCleanup = await sampleStorageEstimate();
+      faceScratchStats.heapAfterCleanup = sampleJsHeap();
+    }
     const ms = Math.round(performance.now() - t0);
     lastRunStats = { total: files.length, analyzedFresh: analyzedFresh, skippedCache: skippedCache, ms: ms,
-      unreadable: unreadableFiles.length };
+      unreadable: unreadableFiles.length, faceMode:runFaceMode?"faces":"v9",
+      faceCandidates: faceCandidates, faceCalls: (faceRuntimeStats && faceRuntimeStats.calls) || 0,
+      faceScratch: {
+        encodeMs: +faceScratchStats.encodeMs.toFixed(1),
+        writeMs: +faceScratchStats.writeMs.toFixed(1),
+        blobsWritten: faceScratchStats.blobsWritten,
+        blobsPruned: faceScratchStats.blobsPruned,
+        blobsUsed: faceScratchStats.blobsUsed,
+        blobBytesPeak: faceScratchStats.blobBytesPeak,
+        blobBytesAfterPrune: faceScratchStats.blobBytesAfterPrune,
+        blobBytesAfterPass2: faceScratchStats.blobBytesAfterPass2,
+        blobBytesAfterCleanup: faceScratchStats.blobBytesAfterCleanup,
+        estimateBefore: faceScratchStats.estimateBefore,
+        estimatePeak: faceScratchStats.estimatePeak,
+        estimateAfterPass2: faceScratchStats.estimateAfterPass2,
+        estimateAfterCleanup: faceScratchStats.estimateAfterCleanup,
+        heapBefore: faceScratchStats.heapBefore,
+        heapAfterPass1: faceScratchStats.heapAfterPass1,
+        heapAfterPrune: faceScratchStats.heapAfterPrune,
+        heapAfterPass2: faceScratchStats.heapAfterPass2,
+        heapAfterCleanup: faceScratchStats.heapAfterCleanup,
+        heapPhasePeak: faceScratchStats.heapPeak,
+        quotaFailures: faceScratchStats.quotaFailures,
+        quotaKeys: faceScratchStats.quotaKeys.slice()
+      } };
     paused = false;
     if (!photos.length) {
       el.progressBlock.classList.add("hidden");
       el.progressText.textContent = "";
       processing = false;
+      setPickHeroBusy(false);
+      clearAnalysisFlag();
       render();
       return;
     }
@@ -2814,8 +4600,8 @@
       const entries = [];
       for (let pi = 0; pi < photos.length; pi++) {
         const p = photos[pi];
-        if (!p.analyzed || !p.hash || !p.thumbBlob) continue;
-        if (p.fromCache && !p._aspBackfilled && !p.userTouched && p.choice === p.autoChoice) continue;
+        if (!p.analyzed || !p.hash || !p.thumbBlob || p.faceError) continue;
+        if (p.fromCache && !p._aspBackfilled && !p._faceModeChanged && !p.userTouched && p.choice === p.autoChoice) continue;
         entries.push({
           key: p.id,
           value: {
@@ -2825,7 +4611,7 @@
               grayStd: p.grayStd, edgeEnergy: p.edgeEnergy, flat: !!p.flat,
               hash: p.hash, aHash: p.aHash,
               thumbBlob: p.thumbBlob, displayBlob: p.displayBlob || null,
-              captureMs: p.captureMs, dateSource: p.dateSource, aspW: p.aspW || 0, aspH: p.aspH || 0,
+              captureMs: p.captureMs, dateSource: p.dateSource, aspW: p.aspW || 0, aspH: p.aspH || 0, faces: p.faces || [], faceScored: !!p.faceScored, faceError: p.faceError || null, faceInferenceMs: p.faceInferenceMs || 0,
             },
           },
         });
@@ -2853,6 +4639,8 @@
     resultFilter = "delete";
     rescuedPending = {};
     processing = false;
+    setPickHeroBusy(false);
+    clearAnalysisFlag();
     renderResult();
   }
 
@@ -3047,7 +4835,7 @@
     vel.count.textContent = (viewer.scope === "delete" ? "要刪 " : viewer.scope === "keep" ? "要留 " : "") +
       (viewer.index + 1) + " / " + viewer.list.length;
     // Top reason: auto reason only — never duplicate 「你手動保留／刪除」 here
-    vel.reason.textContent = autoReasonText(p);
+    vel.reason.innerHTML = reasonHtml(p, autoReasonText(p), true);
     const manual = p.userTouched && p.choice !== p.autoChoice;
     if (manual) {
       vel.manual.textContent = p.choice === "keep" ? "你手動保留" : "你手動刪除";
@@ -3064,15 +4852,7 @@
   }
 
   function updateSummaryCountsOnly() {
-    const kept = keptPhotos();
-    const dels = deletedPhotos();
-    const total = photos.filter(function (x) { return x.analyzed; }).length;
-    el.summaryCounts.innerHTML =
-      '<span class="c-keep">留 <strong>' + kept.length + "</strong></span>" +
-      '<span class="sep">　</span>' +
-      '<span class="c-del">刪 <strong>' + dels.length + "</strong></span>" +
-      '<span class="sep">　</span>' +
-      '<span class="c-total">共 <strong>' + total + "</strong></span>";
+    el.summaryCounts.innerHTML = summaryCountsHtml();
     updateFilterBar();
   }
 
@@ -3088,8 +4868,18 @@
       badge.classList.toggle("keep", p.choice === "keep");
       badge.classList.toggle("delete", p.choice === "delete");
     }
-    const reason = card.querySelector(".reason");
-    if (reason) reason.textContent = p.reason || "";
+    const chips = card.querySelector(".reason-chips");
+    if (chips) chips.outerHTML = reasonChipsHtml(p, card.classList.contains("card-compact"));
+    const expl = card.querySelector(".reason-expl");
+    if (expl) expl.textContent = reasonExplText(p);
+    const ref = card.querySelector(".group-ref");
+    const wantRef = p.choice === "delete" ? groupRefHtml(p) : "";
+    if (ref && wantRef) ref.outerHTML = wantRef;
+    else if (ref && !wantRef) ref.remove();
+    else if (!ref && wantRef) {
+      const after = card.querySelector(".reason-expl") || card.querySelector(".reason-chips");
+      if (after) after.insertAdjacentHTML("afterend", wantRef);
+    }
     card.querySelectorAll(".seg-opt.keep").forEach(function (b) { b.classList.toggle("on", p.choice === "keep"); });
     card.querySelectorAll(".seg-opt.del").forEach(function (b) { b.classList.toggle("on", p.choice === "delete"); });
     const note = card.querySelector(".rescued-note");
@@ -3139,6 +4929,8 @@
     } else return;
     const th = thresholds();
     p.reason = computeReason(p, p.groupSize || 1, th);
+    const matesV = photos.filter(function (x) { return x.analyzed && x.groupId === p.groupId; });
+    p.reasons = computeReasons(p, matesV.length ? matesV : [p], th);
     if (resultFilter !== "all") rescuedPending[p.id] = true;
     await persistChoice(p);
     updateViewerChrome();
@@ -3595,6 +5387,13 @@
     if (el.moreMenu) el.moreMenu.classList.add("hidden");
     if (el.btnMore) el.btnMore.setAttribute("aria-expanded", "false");
   }
+  function onFaceExprToggle(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    setFaceExprPref(!faceExprPref, { source: "ui" });
+  }
+  if (el.btnFaceExprMenu) el.btnFaceExprMenu.addEventListener("click", onFaceExprToggle);
+  if (el.btnFaceExprHome) el.btnFaceExprHome.addEventListener("click", onFaceExprToggle);
+
   el.btnMore.addEventListener("click", function (e) {
     e.stopPropagation();
     const open = el.moreMenu.classList.toggle("hidden") === false;
@@ -3616,14 +5415,32 @@
       el.advPanel.classList.add("hidden");
     }
   });
+  if (el.btnSkipFaceWait) {
+    el.btnSkipFaceWait.addEventListener("click", function () {
+      notifyModelWait("skip");
+    });
+  }
   el.btnReselect.addEventListener("click", function () {
     closeMoreMenu();
+    // Stop an in-flight run so its loops exit and its tail dropAll can run.
+    // Then drop again ourselves (covers completed runs and leftover races).
+    processing = false;
+    notifyModelWait("cancel");
+    paused = false;
+    if (pauseWaiters && pauseWaiters.length) {
+      const w = pauseWaiters.slice();
+      pauseWaiters = [];
+      w.forEach(function (fn) { try { fn(); } catch (_) {} });
+    }
+    clearAnalysisFlag();
+    faceScratchDropAll();
     photos = []; showFinish = false; el.fileInput.value = "";
     resultFilter = "delete"; rescuedPending = {}; renderGen++; delSeenAll = false;
     document.getElementById("homeScreen").appendChild(el.advPanel);
     el.advPanel.classList.add("hidden");
     el.progressBlock.classList.add("hidden");
     el.resultAdvPanel.classList.add("hidden");
+    setPickHeroBusy(false);
     setScreen("home");
   });
   el.btnHintClose.addEventListener("click", function () {
@@ -3651,7 +5468,9 @@
   });
 
   el.fileInput.addEventListener("change", function (e) {
-    if (e.target.files && e.target.files.length) processFiles(e.target.files);
+    const selected=Array.from(e.target.files || []);
+    e.target.value=""; // Reselecting the same photos must start the promised next run.
+    if (selected.length) processFiles(selected);
   });
 
   el.btnPause.addEventListener("click", function () {
@@ -3690,7 +5509,7 @@
     const act = btn ? btn.getAttribute("data-act") : null;
     if (act === "group-ref") {
       const refId = btn.getAttribute("data-ref-id");
-      if (refId) openViewer(refId, { preferGroup: true, gid: p.groupId });
+      if (refId) jumpToKeptPhoto(refId, p);
       return;
     }
     if (resultFilter !== "all" && (act === "view" || (!btn && e.target.closest(".thumb-wrap")))) {
@@ -3717,6 +5536,8 @@
     } else return;
     const th = thresholds();
     p.reason = computeReason(p, p.groupSize || 1, th);
+    const matesC = photos.filter(function (x) { return x.analyzed && x.groupId === p.groupId; });
+    p.reasons = computeReasons(p, matesC.length ? matesC : [p], th);
     if (resultFilter !== "all") {
       // Keep the card in place with instant feedback; it leaves the list only on filter switch
       rescuedPending[p.id] = true;
@@ -3741,6 +5562,8 @@
       p.userTouched = false;
       p.choice = p.autoChoice;
       p.reason = computeReason(p, p.groupSize || 1, thresholds());
+      const matesR = photos.filter(function (x) { return x.analyzed && x.groupId === p.groupId; });
+      p.reasons = computeReasons(p, matesR.length ? matesR : [p], thresholds());
     });
     for (const p of photos) { if (p.analyzed) await persistChoice(p); }
     showToast("已全部還原為自動建議");
@@ -3795,11 +5618,16 @@
   });
 
   loadSettings();
+  syncCrashHint();
   setScreen("home");
+  faceScratchDropAll(); // drop any leftover 512px scratch from a mid-run reload
 
   window.__photoCull = {
     processFiles: processFiles,
     getPhotos: function () { return photos; },
+    getFaceStats: function () { return faceRuntimeStats; },
+    getFaceScratchStats: function () { return faceScratchStats; },
+    setFaceScratchQuotaStub: function (v) { faceScratchQuotaStub = v; },
     isProcessing: function () { return processing; },
     isPaused: function () { return paused; },
     getDisplayLiveCount: function () { return displayLiveOrder.length; },
@@ -3828,6 +5656,55 @@
     },
     getUnreadable: function () { return unreadableFiles.slice(); },
     getLastRunStats: function () { return lastRunStats; },
+    getFaceExprPref: function () { return !!faceExprPref; },
+    setFaceExprPref: function (on, opts) { setFaceExprPref(on, opts || { source: "api" }); },
+    releaseFaceModel: function () { if (window.__photoCullHold) window.__photoCullHold.release(); },
+    failFaceModel: function (msg) { if (window.__photoCullHold) window.__photoCullHold.fail(new Error(msg || "test fail")); },
+    isModelWaitVisible: function () {
+      return !!(el.btnSkipFaceWait && !el.btnSkipFaceWait.classList.contains("hidden"));
+    },
+    getModelWaitText: function () { return el.progressText ? el.progressText.textContent : ""; },
+    skipFaceWait: function () { notifyModelWait("skip"); },
+    getExprChangedGroups: function () {
+      const seen = {};
+      photos.forEach(function (p) {
+        if (p.exprChanged && p.groupId != null && !seen[p.groupId]) {
+          seen[p.groupId] = photos.filter(function (x) { return x.groupId === p.groupId; }).map(function (x) { return x.name; }).sort();
+        }
+      });
+      return seen;
+    },
+    getFaceChangedGroups: function () {
+      const seen = {};
+      photos.forEach(function (p) {
+        if (p.faceChanged && p.groupId != null && !seen[p.groupId]) {
+          const mates = photos.filter(function (x) { return x.groupId === p.groupId; });
+          seen[p.groupId] = {
+            names: mates.map(function (x) { return x.name; }).sort(),
+            kind: p.faceSwapKind || null,
+            sharpestPos: p.sharpestPos || null
+          };
+        }
+      });
+      return seen;
+    },
+    isPickHeroBusy: function () {
+      const hero = document.querySelector(".pick-hero");
+      return !!(hero && hero.classList.contains("is-busy"));
+    },
+    isPickHidden: function () {
+      const btn = document.querySelector(".pick-hero .file-btn");
+      const sw = document.getElementById("btnFaceExprHome");
+      function hidden(n) {
+        if (!n) return true;
+        const s = window.getComputedStyle(n);
+        return s.display === "none" || s.visibility === "hidden" || n.classList.contains("hidden");
+      }
+      return hidden(btn) && hidden(sw);
+    },
+    isCrashHintVisible: function () { return !!crashHintVisible; },
+    clearAnalysisFlag: clearAnalysisFlag,
+    setAnalysisFlagForTest: setAnalysisFlag,
     buildDeleteSegments: buildDeleteSegments,
     segmentCopyText: segmentCopyText,
     recompute: function () { recomputeGroupsAndLabels(); render(); },
