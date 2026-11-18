@@ -791,6 +791,7 @@
   const DISPLAY_LIVE_CAP = 12;     // nearby live 720 URLs / in-flight+queued encodes
   const DISPLAY_ENC_CONCURRENCY = 2;
   const BATCH = BATCH_CONCURRENCY;
+  const BUILD = "v9e"; // memory-only decode-pool hotfix of v9d; decisions unchanged
   const DB_NAME = "photo-cull-v1";
   const STORE = "choices";
   const SETTINGS_KEY = "photo-cull-settings-v1";
@@ -990,6 +991,75 @@
       } else {
         img.onload = finish;
       }
+    });
+  }
+
+  // v9e memory hotfix: all analysis decodes go through a sliding pool of
+  // DECODE_POOL_SIZE Images. One Image is reused per slot; the decoded frame
+  // is dropped (src="" / removeAttribute / no leftover caller ref) and the UI
+  // is yielded before the slot is reused. Same HTML Image + decode() →
+  // drawImage@ANALYZE_MAX path as v9d — do not introduce createImageBitmap resize.
+  const DECODE_POOL_SIZE = 1;
+  const _decodeFree = [];
+  const _decodeWait = [];
+  let _decodeCreated = 0;
+  function acquireDecodeSlot() {
+    return new Promise(function (resolve) {
+      if (_decodeFree.length) { resolve(_decodeFree.pop()); return; }
+      if (_decodeCreated < DECODE_POOL_SIZE) {
+        _decodeCreated++;
+        const img = new Image();
+        img.decoding = "async";
+        resolve({ img: img });
+        return;
+      }
+      _decodeWait.push(resolve);
+    });
+  }
+  function releaseDecodeSlot(slot) {
+    if (_decodeWait.length) _decodeWait.shift()(slot);
+    else _decodeFree.push(slot);
+  }
+  function loadIntoImage(img, file) {
+    return new Promise(function (resolve, reject) {
+      const url = URL.createObjectURL(file);
+      const finish = function () {
+        URL.revokeObjectURL(url);
+        resolve(img);
+      };
+      const fail = function () {
+        URL.revokeObjectURL(url);
+        reject(new Error(file.name || "image"));
+      };
+      img.decoding = "async";
+      img.onload = null;
+      img.onerror = fail;
+      img.src = url;
+      if (typeof img.decode === "function") {
+        img.decode().then(finish).catch(function () {
+          if (img.complete && img.naturalWidth) finish();
+          else fail();
+        });
+      } else {
+        img.onload = finish;
+      }
+    });
+  }
+  async function withDecodedImage(file, fn) {
+    const slot = await acquireDecodeSlot();
+    const img = slot.img;
+    try {
+      await loadIntoImage(img, file);
+      return await fn(img);
+    } finally {
+      try { img.src = ""; img.removeAttribute("src"); img.onload = null; img.onerror = null; } catch (_) {}
+      await yieldToUI();
+      releaseDecodeSlot(slot);
+    }
+  }
+  async function decodeAndDraw(file, canvas, ctx, maxSide) {
+    return withDecodedImage(file, function (img) {
+      return drawOnto(canvas, ctx, img, maxSide);
     });
   }
   let sharedThumbCanvas = null;
@@ -1712,17 +1782,14 @@
      * are produced lazily near the viewport (never feed hashes).
      */
     const capP = readCaptureDate(item.file);
-    const img = await loadImageFromFile(item.file);
-    const cap = await capP;
-    item.captureMs = cap.ms;
-    item.dateSource = cap.source;
     const analyzeCanvas = acquireCanvas();
     const analyzeCtx = analyzeCanvas.getContext("2d", { willReadFrequently: true, alpha: false });
     try {
-      const analyzed = drawOnto(analyzeCanvas, analyzeCtx, img, ANALYZE_MAX);
+      const analyzed = await decodeAndDraw(item.file, analyzeCanvas, analyzeCtx, ANALYZE_MAX);
       item.aspW = analyzed.w; item.aspH = analyzed.h; // v9c: card frame ratio (display only)
-      try { img.src = ""; img.removeAttribute("src"); } catch (_) {}
-      await yieldToUI();
+      const cap = await capP;
+      item.captureMs = cap.ms;
+      item.dateSource = cap.source;
       const imageData = analyzeCtx.getImageData(0, 0, analyzed.w, analyzed.h);
       const metricsP = metricsViaWorker(imageData, analyzed.w, analyzed.h);
 
@@ -1755,10 +1822,8 @@
       });
       item.analyzed = true; item.fromCache = false;
     } catch (err) {
-      try { img.src = ""; img.removeAttribute("src"); } catch (_) {}
       throw err;
     } finally {
-      try { img.src = ""; img.removeAttribute("src"); } catch (_) {}
       releaseCanvas(analyzeCanvas);
     }
   }
